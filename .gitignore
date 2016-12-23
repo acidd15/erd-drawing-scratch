@@ -1,0 +1,7 @@
+### node ###
+front-ui/node_modules
+
+### compiled typescript files ###
+front-ui/app/**/*.js
+front-ui/app/**/*.js.map
+front-ui/npm-debug.log
