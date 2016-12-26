@@ -65,3 +65,10 @@ export function keyboard(keyCode: any): any {
 
     return key;
 }
+
+export function getXYDelta(x1: number, y1: number, x2: number, y2: number): any {
+    return {
+        x: x1 - x2,
+        y: y1 - y2
+    };
+}

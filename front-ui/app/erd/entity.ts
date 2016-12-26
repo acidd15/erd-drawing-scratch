@@ -7,7 +7,7 @@ import {XLine} from './line';
 import {XGraphics} from "./graphics";
 import {State, EventType} from './const';
 
-import {clickAndDblClickHandler} from "./library";
+import {clickAndDblClickHandler, getXYDelta} from "./library";
 
 import DisplayObject = PIXI.DisplayObject;
 import Point = PIXI.Point;
@@ -22,7 +22,7 @@ export class XEntity extends XGraphics {
     private bodyContainer: PIXI.Graphics;
     private linePoints: XLine[];
     private _name: PIXI.Text;
-    private dragging: boolean;
+    private _dragging: boolean;
     private isLeftTopSelected: boolean;
     private isRightTopSelected: boolean;
     private isLeftBottomSelected: boolean;
@@ -64,6 +64,14 @@ export class XEntity extends XGraphics {
 
     public get _height(): number {
         return this.__height;
+    }
+
+    public get dragging(): boolean {
+        return this._dragging;
+    }
+
+    public set dragging(v: boolean) {
+        this._dragging = v;
     }
 
     /*
@@ -271,28 +279,28 @@ export class XEntity extends XGraphics {
         return this.isPosInRect(rb, pos);
     }
 
-    private moveEntity(delta: any): void {
-        this.position.x += delta.x;
-        this.position.y += delta.y;
+    public moveEntity(x: number, y: number): void {
+        this.position.x += x;
+        this.position.y += y;
     }
 
-    private resizeEntity(delta: any): void {
+    private resizeEntity(x: number, y: number): void {
         if (this.isLeftTopSelected) {
-            this.position.x += delta.x;
-            this.position.y += delta.y;
-            this.__width += (-1 * delta.x);
-            this.__height += (-1 * delta.y);
+            this.position.x += x;
+            this.position.y += y;
+            this.__width += (-1 * x);
+            this.__height += (-1 * y);
         } else if (this.isRightTopSelected) {
-            this.position.y += delta.y;
-            this.__width += delta.x;
-            this.__height += (-1 * delta.y);
+            this.position.y += y;
+            this.__width += x;
+            this.__height += (-1 * y);
         } else if (this.isLeftBottomSelected) {
-            this.position.x += delta.x;
-            this.__width += (-1 * delta.x);
-            this.__height += delta.y;
+            this.position.x += x;
+            this.__width += (-1 * x);
+            this.__height += y;
         } else if (this.isRightBottomSelected) {
-            this.__width += delta.x;
-            this.__height += delta.y;
+            this.__width += x;
+            this.__height += y;
         }
     }
 
@@ -300,7 +308,6 @@ export class XEntity extends XGraphics {
         this.bringToFront();
 
         this.data = evt.data;
-        this.oldPosition = this.data.getLocalPosition(this.parent);
 
         var lPos = this.toLocal(evt.data.global);
 
@@ -314,47 +321,10 @@ export class XEntity extends XGraphics {
             this.isRightBottomSelected = true;
         }
 
+        // {{{
         let stage: XStage = <XStage>this.parent;
 
-        if (
-            stage.state == State.SELECT
-            || stage.state == State.ADD_RELATION
-        ) {
-            this.selected = true;
-            this.dragging = true;
-
-            if (stage.keyboard.ctrlKey == false) {
-                if (
-                    stage.curSelectedEntity
-                    && stage.curSelectedEntity != this
-                ) {
-                    if (stage.state == State.ADD_RELATION) {
-                        stage.addRelation(stage.curSelectedEntity, this);
-                    }
-
-                    stage.curSelectedEntity.selected = false;
-                    stage.curSelectedEntity.redraw();
-                }
-            }
-
-            if (
-                (
-                    stage.state == State.ADD_RELATION
-                    && !stage.curSelectedEntity
-                )
-                || stage.state == State.SELECT
-            ) {
-                stage.curSelectedEntity = this;
-                stage.isChildSelected = true;
-            } else {
-                this.selected = false;
-                this.dragging = false;
-                stage.curSelectedEntity = undefined;
-                stage.isChildSelected = false;
-            }
-        }
-
-        this.redraw();
+        this.oldPosition = this.data.getLocalPosition(stage);
 
         clickAndDblClickHandler.call(
             this,
@@ -362,14 +332,24 @@ export class XEntity extends XGraphics {
 
             },
             function () {
+                console.log("hi");
                 stage.emitEvent(EventType.EVT_EDIT_ENTITY, this);
                 this.redraw();
             }
         );
+
+        stage.entitySelected(this, this.selected == false);
+        // }}}
+
+        this.selected = true;
+        this._dragging = true;
+
+        this.redraw();
+
     }
 
     private onMouseUp(evt: any): any {
-        this.dragging = false;
+        this._dragging = false;
         this.isLeftTopSelected = false;
         this.isRightTopSelected = false;
         this.isLeftBottomSelected = false;
@@ -378,19 +358,21 @@ export class XEntity extends XGraphics {
     }
 
     private onMouseUpOutside(evt: any): any {
-        this.dragging = false;
+        this._dragging = false;
         this.selected = false;
         this.redraw();
     }
 
-    private onMouseMove(evt: any): any {
-        if (this.dragging) {
-            let newPosition: any  = this.data.getLocalPosition(this.parent);
+    public onMouseMove(evt: any): any {
+        let stage: XStage = <XStage>this.parent;
 
-            let delta: Object = {
-                x: newPosition.x - this.oldPosition.x,
-                y: newPosition.y - this.oldPosition.y
-            };
+        if (this._dragging && stage.state == State.SELECT) {
+            let newPosition: any  = this.data.getLocalPosition(stage);
+
+            let delta: any = getXYDelta(
+                newPosition.x, newPosition.y,
+                this.oldPosition.x, this.oldPosition.y
+            );
 
             if (
                 this.isLeftTopSelected
@@ -398,9 +380,10 @@ export class XEntity extends XGraphics {
                 || this.isLeftBottomSelected
                 || this.isRightBottomSelected
             ) {
-                this.resizeEntity(delta);
+                this.resizeEntity(delta.x, delta.y);
             } else {
-                this.moveEntity(delta);
+                this.moveEntity(delta.x, delta.y);
+                stage.moveAnotherEntityIfExist(delta.x, delta.y);
             }
 
             if (this.linePoints) {

@@ -1,12 +1,14 @@
 /// <reference path="../../module/pixi-typescript/pixi.js.d.ts" />
 
+require('module/pixijs-4.3.0/pixi.js');
+
 import {XContainer} from "./container";
 import {XEntity} from './entity';
 import {XLine} from './line';
-import {State, EventType} from './const';
-import {XGraphics} from "./graphics";
+import {State, EventType, DragState} from './const';
+import {XSelection} from "./selection";
 
-require('module/pixijs-4.3.0/pixi.js');
+import {getXYDelta} from "./library";
 
 class Position2D {
     constructor(private _x: number, private _y: number) {
@@ -32,7 +34,7 @@ class Position2D {
 
 export class XStage extends XContainer {
 
-    private dragging: boolean;
+    private dragging: DragState;
     private oldPosition: Position2D;
     //private hitArea: PIXI.Rectangle;
     private _curSelectedEntity: XEntity;
@@ -41,14 +43,16 @@ export class XStage extends XContainer {
     //private relationData: Object[];
     private eventMap: any;
     private _keyboard: any;
-    private selectionRect: PIXI.Graphics;
+    private selectionRect: XSelection;
+    private selectionQueue: any[];
+    private relationQueue: any[];
 
     constructor(x: number, y: number, width: number, height: number, color: number) {
         super();
 
         this.interactive = true;
 
-        this.dragging = false;
+        this.dragging = DragState.ENDED;
         this.oldPosition = new Position2D(0, 0);
         this.hitArea = new PIXI.Rectangle(0, 0, width, height);
         this._isChildSelected = false;
@@ -58,6 +62,13 @@ export class XStage extends XContainer {
         this._keyboard = {
             ctrlKey: false
         };
+
+        this.selectionQueue = [];
+        this.relationQueue = [];
+
+        this.selectionRect = new XSelection();
+        this.selectionRect.visible = false;
+        this.addChild(this.selectionRect);
 
         this.on('mousedown', this.onMouseDown);
         this.on('mouseup', this.onMouseUp);
@@ -100,6 +111,30 @@ export class XStage extends XContainer {
         this._state = _state;
     }
 
+    public entitySelected(entity: XEntity, isNewlySelected: boolean): void {
+        if (this._state == State.SELECT) {
+            this.selectionQueue.push({entity: entity, isNewlySelected: isNewlySelected});
+        } else if (this._state == State.ADD_RELATION) {
+            this.relationQueue.push(entity);
+        }
+    }
+
+    public moveAnotherEntityIfExist(x: number, y: number): void {
+        let i: any;
+        for (i in this.children) {
+            let graphicsItem: any = this.children[i];
+
+            if (
+                graphicsItem instanceof XEntity
+                && graphicsItem.selected == true
+                && this._curSelectedEntity != graphicsItem
+            ) {
+                graphicsItem.moveEntity(x, y);
+                graphicsItem.redraw();
+            }
+        }
+    }
+
     private addEntity(pos: any): void {
         let entity: XEntity = new XEntity(pos.x, pos.y, 200, 300, 0xcccccc);
         entity.setName("Unnamed Entity");
@@ -113,15 +148,8 @@ export class XStage extends XContainer {
 
             for (let i in fromLinePoints) {
                 if (
-                    (
-                        fromLinePoints[i].from == from
-                        || fromLinePoints[i].to == from
-                    )
-                    &&
-                    (
-                        fromLinePoints[i].from == to
-                        || fromLinePoints[i].to == to
-                    )
+                    (fromLinePoints[i].from == from || fromLinePoints[i].to == from)
+                    && (fromLinePoints[i].from == to || fromLinePoints[i].to == to)
                 ) {
                     return;
                 }
@@ -141,25 +169,80 @@ export class XStage extends XContainer {
     }
     */
 
+    private evaluateSelect(invFactor: any): void {
+        let x1: number = this.selectionRect.position.x;
+        let x2: number = x1 + (invFactor.x * this.selectionRect.width);
+        let y1: number = this.selectionRect.position.y;
+        let y2: number = y1 + (invFactor.y * this.selectionRect.height);
+
+        let sel: any = {
+            xMin: Math.min(x1, x2),
+            xMax: Math.max(x1, x2),
+            yMin: Math.min(y1, y2),
+            yMax: Math.max(y1, y2)
+        };
+
+        let i: any;
+        for (i in this.children) {
+            let graphicsItem: any = this.children[i];
+
+            let x: number = graphicsItem.position.x;
+            let y: number = graphicsItem.position.y;
+
+            if (
+                (sel.xMin <= x && x <= sel.xMax)
+                && (sel.yMin <= y && y <= sel.yMax)
+            ) {
+                if (graphicsItem instanceof XEntity) {
+                    graphicsItem.selected = true;
+                    graphicsItem.redraw();
+                }
+            }
+        }
+    }
+
+    private getInvFactor(x1: number, y1: number, x2: number, y2: number): any {
+        return {
+            x: (x1 < x2) ? -1 : 1,
+            y: (y1 < y2) ? -1 : 1
+        };
+    }
+
     private onMouseDown(evt: any): void {
-        this.dragging = true;
+        this.dragging = DragState.READY;
 
         this.oldPosition.x = evt.data.global.x;
         this.oldPosition.y = evt.data.global.y;
 
-        if (!this._isChildSelected) {
-            this.selectionRect = new PIXI.Graphics();
-            this.selectionRect.position.x = this.oldPosition.x;
-            this.selectionRect.position.y = this.oldPosition.y;
-            this.addChild(this.selectionRect);
+        let q: any = this.selectionQueue.pop();
+        this._curSelectedEntity = q ? q.entity : q;
+
+        if (this._curSelectedEntity) {
+            this._isChildSelected = true;
+        } else {
+            this._isChildSelected = false;
         }
 
-        if (
-            this._state == State.SELECT
-            || this._state == State.ADD_RELATION
-        ) {
+        if (!this._isChildSelected) {
+            this.selectionRect.show(this.oldPosition.x, this.oldPosition.y);
+        }
+
+        if (this._state == State.ADD_RELATION) {
+            console.log(this.relationQueue);
+            if (this.relationQueue.length == 2) {
+                let v2 = this.relationQueue.pop();
+                let v1 = this.relationQueue.pop();
+
+                this.addRelation(v1, v2);
+
+                v1.selected = false;
+                v1.redraw();
+
+                v2.selected = false;
+                v2.redraw();
+            }
+        } else if (this._state == State.SELECT) {
             if (this._isChildSelected == false) {
-                //console.log(this.children);
                 let i: any;
                 for (i in this.children) {
                     let graphicsItem: any = this.children[i];
@@ -169,23 +252,18 @@ export class XStage extends XContainer {
                         graphicsItem.redraw();
                     }
                 }
-                this._curSelectedEntity = undefined;
             } else {
-                if (this._keyboard.ctrlKey == false) {
+                if (this._keyboard.ctrlKey == false && q.isNewlySelected == true) {
                     let i: any;
                     for (i in this.children) {
                         let graphicsItem: any = this.children[i];
 
-                        if (graphicsItem instanceof XEntity) {
-                            if (graphicsItem != this._curSelectedEntity) {
-                                graphicsItem.selected = false;
-                                graphicsItem.redraw();
-                            }
+                        if (graphicsItem instanceof XEntity && graphicsItem != this._curSelectedEntity) {
+                            graphicsItem.selected = false;
+                            graphicsItem.redraw();
                         }
                     }
                 }
-
-                this._isChildSelected = false;
             }
         } else if (this._state == State.ADD_ENTITY) {
             this.addEntity(evt.data.global);
@@ -193,62 +271,19 @@ export class XStage extends XContainer {
     }
 
     private onMouseUp(evt: any): void {
-        this.dragging = false;
+        this.dragging = DragState.ENDED;
 
-        //console.log(this.selectionRect);
-        //console.log(this._state);
-        //console.log(this.children.length);
-
-        if (this.selectionRect) {
+        if (this.selectionRect.visible) {
             if (this._state == State.SELECT) {
-                let invFactor: any = {
-                    x: 1,
-                    y: 1
-                };
+                let invFactor: any = this.getInvFactor(
+                    evt.data.global.x, evt.data.global.y,
+                    this.selectionRect.position.x, this.selectionRect.position.y
+                );
 
-                if (evt.data.global.x < this.selectionRect.position.x) {
-                    invFactor.x = -1;
-                }
-
-                if (evt.data.global.y < this.selectionRect.position.y) {
-                    invFactor.y = -1;
-                }
-
-                let x1: number = this.selectionRect.position.x;
-                let x2: number = this.selectionRect.position.x + (invFactor.x * this.selectionRect.width);
-                let y1: number = this.selectionRect.position.y;
-                let y2: number = this.selectionRect.position.y + (invFactor.y * this.selectionRect.height);
-
-                let sel: any = {
-                    xMin: Math.min(x1, x2),
-                    xMax: Math.max(x1, x2),
-                    yMin: Math.min(y1, y2),
-                    yMax: Math.min(y1, y2)
-                };
-
-                //console.log(this.children);
-
-                let i: any;
-                for (i in this.children) {
-                    let graphicsItem: any = this.children[i];
-
-                    let x: number = graphicsItem.position.x;
-                    let y: number = graphicsItem.position.y;
-
-                    if (
-                        (sel.xMin <= x && x <= sel.xMax)
-                        && (sel.yMin <= y && y <= sel.yMax)
-                    ) {
-                        if (graphicsItem instanceof XEntity) {
-                            graphicsItem.selected = true;
-                            graphicsItem.redraw();
-                        }
-                    }
-                }
+                this.evaluateSelect(invFactor);
             }
 
-            this.removeChild(this.selectionRect);
-            this.selectionRect = undefined;
+            this.selectionRect.hide();
         }
 
         this.oldPosition.x = 0;
@@ -256,18 +291,20 @@ export class XStage extends XContainer {
     }
 
     private onMouseMove(evt: any): void {
-        if (this.dragging) {
+        if (this.dragging == DragState.READY) {
+            this.dragging = DragState.DRAGGING;
+        }
+
+        if (this.dragging == DragState.DRAGGING && this._state == State.SELECT) {
             let newPosition: any = evt.data.global;
 
-            let delta: any =  {
-                x: newPosition.x - this.oldPosition.x,
-                y: newPosition.y - this.oldPosition.y
-            };
+            let delta: any = getXYDelta(
+                newPosition.x, newPosition.y,
+                this.oldPosition.x, this.oldPosition.y
+            );
 
-            if (this.selectionRect) {
-                this.selectionRect.clear();
-                this.selectionRect.lineStyle(1, 0x00, 1);
-                this.selectionRect.drawRect(0, 0, delta.x, delta.y);
+            if (this.selectionRect.visible) {
+                this.selectionRect.update(delta.x, delta.y);
             }
         }
     }

@@ -5,6 +5,11 @@ require('module/pixijs-4.3.0/pixi.js');
 export class XGraphics extends PIXI.Graphics {
     private _selected: boolean;
 
+    constructor() {
+        super();
+        this._selected = false;
+    }
+
     public get selected() {
         return this._selected;
     }

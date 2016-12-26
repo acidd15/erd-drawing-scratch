@@ -1,7 +1,12 @@
+### idea ###
+.idea/*.xml
+
 ### node ###
 front-ui/node_modules
+npm-debug.log
 
 ### compiled typescript files ###
 front-ui/app/**/*.js
 front-ui/app/**/*.js.map
 front-ui/npm-debug.log
+
