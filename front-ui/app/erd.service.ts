@@ -1,7 +1,7 @@
 
 import {Injectable, ElementRef} from "@angular/core";
 import {XStage} from "./erd/stage";
-import {State} from "./erd/const";
+import {State, EventType} from "./erd/types";
 
 @Injectable()
 export class ErdService {
@@ -13,12 +13,14 @@ export class ErdService {
     }
 
     public createStage(ele: ElementRef): void {
-        this.renderer = <PIXI.CanvasRenderer>PIXI.autoDetectRenderer(1000, 1000, {backgroundColor: 0xff, antialias: false});
+        this.renderer = <PIXI.CanvasRenderer>PIXI.autoDetectRenderer(1000, 1000, {backgroundColor: 0xffffff, antialias: false});
         ele.nativeElement.appendChild(this.renderer.view);
 
-        this.stage = new XStage(0, 0, 1000, 1000, 0xff00ff);
+        this.stage = new XStage(1000, 1000);
 
         this.animate();
+
+        this.setEventHandler();
     }
 
     private animate(): void {
@@ -27,14 +29,29 @@ export class ErdService {
     }
 
     public setAddEntityState(): void {
-        this.stage.setState(State.ADD_ENTITY);
+        if (this.stage.getState() != State.ADD_ENTITY) {
+            this.stage.setState(State.ADD_ENTITY);
+            this.stage.deselect([]);
+        }
     }
 
     public setSelectEntityState(): void {
-        this.stage.setState(State.SELECT);
+        if (this.stage.getState() != State.SELECT) {
+            this.stage.setState(State.SELECT);
+            this.stage.deselect([]);
+        }
     }
 
     public setAddRelationState(): void {
-        this.stage.setState(State.ADD_RELATION);
+        if (this.stage.getState() != State.ADD_RELATION) {
+            this.stage.setState(State.ADD_RELATION);
+            this.stage.deselect([]);
+        }
+    }
+
+    private setEventHandler(): void {
+        this.stage.setEventHandler(EventType.EVT_EDIT_ENTITY, (evt: any) => {
+            console.log(evt);
+        });
     }
 }

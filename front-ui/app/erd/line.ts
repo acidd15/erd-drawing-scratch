@@ -1,30 +1,30 @@
 /// <reference path="../../module/pixi-typescript/pixi.js.d.ts" />
 
-import {XEntity} from "./entity";
-require('module/pixijs-4.3.0/pixi.js');
+require("module/pixijs-4.3.0/pixi.js");
 
+import {XEntity} from "./entity";
 import {XGraphics} from "./graphics";
 
 export class XLine extends XGraphics {
     private linePos: any;
 
-    constructor(private _from: XEntity, private _to: XEntity) {
+    constructor(private from: XEntity, private to: XEntity) {
         super();
 
-        this._from.addLinePoint(this);
-        this._to.addLinePoint(this);
+        this.from.addLinePoint(this);
+        this.to.addLinePoint(this);
 
         this.linePos = this.getLinePos();
 
         this.redraw();
     }
 
-    public get from() {
-        return this._from;
+    public getFrom() {
+        return this.from;
     }
 
-    public get to() {
-        return this._to;
+    public getTo() {
+        return this.to;
     }
 
     //@Override
@@ -38,19 +38,19 @@ export class XLine extends XGraphics {
     }
 
     private getLinePos(): any {
-        let fromCenter: PIXI.Point = this._from.getCenterPos();
-        let toCenter: PIXI.Point = this._to.getCenterPos();
+        let fromCenter: PIXI.Point = this.from.getCenterPos();
+        let toCenter: PIXI.Point = this.to.getCenterPos();
 
         if (fromCenter.x <= toCenter.x) {
             return {
-                fromPos: new PIXI.Point(this._from.position.x + this._from._width, fromCenter.y),
-                toPos: new PIXI.Point(this._to.position.x, toCenter.y)
+                fromPos: new PIXI.Point(this.from.position.x + this.from.getWidth(), fromCenter.y),
+                toPos: new PIXI.Point(this.to.position.x, toCenter.y)
             };
         }
         else {
             return {
-                fromPos: new PIXI.Point(this._from.position.x, fromCenter.y),
-                toPos: new PIXI.Point(this._to.position.x + this._to._width, toCenter.y)
+                fromPos: new PIXI.Point(this.from.position.x, fromCenter.y),
+                toPos: new PIXI.Point(this.to.position.x + this.to.getWidth(), toCenter.y)
             };
         }
     }
@@ -63,6 +63,7 @@ export class XLine extends XGraphics {
         let xPos: number = this.calcCenterXPos();
 
         this.clear();
+
         this.lineStyle(1, 0x00, 1);
 
         this.moveTo(this.linePos.fromPos.x, this.linePos.fromPos.y);

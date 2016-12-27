@@ -1,28 +1,3 @@
-export function clickAndDblClickHandler(clickHandler: any, dblClickHandler: any): void {
-    if (typeof this.clickCount == "undefined") {
-        this.clickCount = 1;
-
-        let _self: any = this;
-        setTimeout(
-            () => {
-                // double click
-                if (_self.clickCount == 2) {
-                    dblClickHandler.call(_self);
-                }
-                // single click
-                else {
-                    clickHandler.call(_self);
-                }
-                _self.clickCount = undefined;
-            },
-            300
-        );
-
-        return;
-    }
-    this.clickCount = 2;
-}
-
 /*
  * https://github.com/kittykatattack/learningPixi#keyboard
  */
@@ -70,5 +45,12 @@ export function getXYDelta(x1: number, y1: number, x2: number, y2: number): any 
     return {
         x: x1 - x2,
         y: y1 - y2
+    };
+}
+
+export function getInvFactor(x1: number, y1: number, x2: number, y2: number): any {
+    return {
+        x: (x1 < x2) ? -1 : 1,
+        y: (y1 < y2) ? -1 : 1
     };
 }

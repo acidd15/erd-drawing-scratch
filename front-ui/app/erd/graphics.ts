@@ -1,21 +1,32 @@
 /// <reference path="../../module/pixi-typescript/pixi.js.d.ts" />
 
-require('module/pixijs-4.3.0/pixi.js');
+require("module/pixijs-4.3.0/pixi.js");
 
 export class XGraphics extends PIXI.Graphics {
-    private _selected: boolean;
+    private selected: boolean;
+    private selectedNewly: boolean;
 
     constructor() {
         super();
-        this._selected = false;
+        this.selected = false;
+        this.selectedNewly = false;
     }
 
-    public get selected() {
-        return this._selected;
+    public isSelected() {
+        return this.selected;
     }
 
-    public set selected(v) {
-        this._selected = v;
+    public setSelected(v: boolean) {
+        if (this.selected == false) {
+            this.selectedNewly = true;
+        } else {
+            this.selectedNewly = false;
+        }
+        this.selected = v;
+    }
+
+    public isSelectedNewly(): boolean {
+        return this.selectedNewly;
     }
 
     public redraw(): void {
@@ -25,9 +36,8 @@ export class XGraphics extends PIXI.Graphics {
     //@Override
     public bringToFront(): void {
         if (this.parent) {
-            var parent = this.parent;
-            parent.removeChild(this);
-            parent.addChild(this);
+            this.parent.removeChild(this);
+            this.parent.addChild(this);
         }
     }
 

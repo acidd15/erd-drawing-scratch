@@ -1,28 +1,24 @@
 /// <reference path="../../module/pixi-typescript/pixi.js.d.ts" />
 
-require('module/pixijs-4.3.0/pixi.js');
+require("module/pixijs-4.3.0/pixi.js");
 
 import {XStage} from "./stage";
-import {XLine} from './line';
+import {XLine} from "./line";
 import {XGraphics} from "./graphics";
-import {State, EventType} from './const';
+import {State, EventType, DragState} from "./types";
 
-import {clickAndDblClickHandler, getXYDelta} from "./library";
-
-import DisplayObject = PIXI.DisplayObject;
-import Point = PIXI.Point;
-import ITextStyleStyle = PIXI.ITextStyleStyle;
+import {getXYDelta} from "./library";
 
 export class XEntity extends XGraphics {
-    private __width: number;
-    private __height: number;
+    private _width: number;
+    private _height: number;
     private color: number;
     //private minSize: any;
     private itemCount: number;
     private bodyContainer: PIXI.Graphics;
     private linePoints: XLine[];
     private _name: PIXI.Text;
-    private _dragging: boolean;
+    private dragging: DragState;
     private isLeftTopSelected: boolean;
     private isRightTopSelected: boolean;
     private isLeftBottomSelected: boolean;
@@ -33,8 +29,8 @@ export class XEntity extends XGraphics {
     constructor(x: number, y: number, width: number, height: number, color: number) {
         super();
 
-        this.__width = width;
-        this.__height = height;
+        this._width = width;
+        this._height = height;
 
         this.position.set(x, y);
 
@@ -50,39 +46,17 @@ export class XEntity extends XGraphics {
 
         this.linePoints = [];
 
-        this.on('mousedown', (evt:any) => this.onMouseDown(evt));
-        this.on('mouseup', (evt:any) => this.onMouseUp(evt));
-        this.on('mouseupoutside', (evt:any) => this.onMouseUpOutside(evt));
-        this.on('mousemove', (evt:any) => this.onMouseMove(evt));
+        this.on("mousedown", this.onMouseDown);
+        this.on("mouseup", this.onMouseUp);
+        this.on("mouseupoutside", this.onMouseUpOutside);
+        this.on("mousemove", this.onMouseMove);
 
         this.redraw();
     }
 
-    public get _width(): number {
-        return this.__width;
+    public getWidth(): number {
+        return this._width;
     }
-
-    public get _height(): number {
-        return this.__height;
-    }
-
-    public get dragging(): boolean {
-        return this._dragging;
-    }
-
-    public set dragging(v: boolean) {
-        this._dragging = v;
-    }
-
-    /*
-    private getName(): string {
-        return this._name.text;
-    }
-
-    private getItems(): DisplayObject[] {
-        return this.bodyContainer.children;
-    }
-    */
 
     //@Override
     public redraw(): void {
@@ -97,21 +71,19 @@ export class XEntity extends XGraphics {
             return;
         }
 
-        var t = new PIXI.Text(
+        this._name = new PIXI.Text(
             name,
-            <ITextStyleStyle>{
-                fontFamily: 'Arial',
-                fontSize: '11px',
-                fill: 'green',
-                align: 'left'
+            <PIXI.ITextStyleStyle>{
+                fontFamily: "Arial",
+                fontSize: "11px",
+                fill: "green",
+                align: "left"
             }
         );
 
-        t.position.set(0, -15);
+        this._name.position.set(0, -15);
 
-        this.addChild(t);
-
-        this._name = t;
+        this.addChild(this._name);
     }
 
     /*
@@ -130,7 +102,7 @@ export class XEntity extends XGraphics {
         // to prevent hit test
         t.containsPoint = () => false;
 
-        this.__height += 15;
+        this._height += 15;
         this.itemCount++;
 
         this.bodyContainer.addChild(t);
@@ -151,7 +123,7 @@ export class XEntity extends XGraphics {
             this.bodyContainer.clear();
             this.bodyContainer.beginFill(this.color, 1);
             this.bodyContainer.lineStyle(1, 0x00, 1);
-            this.bodyContainer.drawRect(0, 0, this.__width, this.__height);
+            this.bodyContainer.drawRect(0, 0, this._width, this._height);
             this.bodyContainer.endFill();
 
             this.clipBodyContainer();
@@ -165,19 +137,20 @@ export class XEntity extends XGraphics {
             clip = new PIXI.Graphics();
         }
 
-        let d: Point = this.toGlobal(this.bodyContainer.position);
+        let p: PIXI.Point = this.toGlobal(this.bodyContainer.position);
 
         clip.clear();
         clip.beginFill(this.color, 1);
-        clip.drawRect(d.x -1, d.y, this.__width +1, this.__height +1);
+        clip.drawRect(p.x -1, p.y, this._width +1, this._height +1);
         clip.endFill();
 
         this.bodyContainer.mask = clip;
     }
 
     private drawResizeHandle(): void {
-        if (this.selected) {
+        if (this.isSelected()) {
             this.beginFill(0x00, 1);
+
             let lt: any = this.getLeftTopHandleRect();
             let rt: any = this.getRightTopHandleRect();
             let lb: any = this.getLeftBottomHandleRect();
@@ -193,8 +166,8 @@ export class XEntity extends XGraphics {
     }
 
     public getCenterPos(): PIXI.Point {
-        let cx = this.position.x + Math.ceil(this.__width /2);
-        let cy = this.position.y + Math.ceil(this.__height /2);
+        let cx = this.position.x + Math.ceil(this._width /2);
+        let cy = this.position.y + Math.ceil(this._height /2);
 
         return new PIXI.Point(cx, cy);
     }
@@ -210,7 +183,7 @@ export class XEntity extends XGraphics {
 
     private getRightTopHandleRect(): Object {
         return {
-            x: this.__width,
+            x: this._width,
             y: -10,
             width: 10,
             height: 10
@@ -220,7 +193,7 @@ export class XEntity extends XGraphics {
     private getLeftBottomHandleRect(): Object {
         return {
             x: -10,
-            y: this.__height,
+            y: this._height,
             width: 10,
             height: 10
         };
@@ -228,8 +201,8 @@ export class XEntity extends XGraphics {
 
     private getRightBottomHandleRect(): Object {
         return {
-            x: this.__width,
-            y: this.__height,
+            x: this._width,
+            y: this._height,
             width: 10,
             height: 10
         };
@@ -288,19 +261,28 @@ export class XEntity extends XGraphics {
         if (this.isLeftTopSelected) {
             this.position.x += x;
             this.position.y += y;
-            this.__width += (-1 * x);
-            this.__height += (-1 * y);
+            this._width += (-1 * x);
+            this._height += (-1 * y);
         } else if (this.isRightTopSelected) {
             this.position.y += y;
-            this.__width += x;
-            this.__height += (-1 * y);
+            this._width += x;
+            this._height += (-1 * y);
         } else if (this.isLeftBottomSelected) {
             this.position.x += x;
-            this.__width += (-1 * x);
-            this.__height += y;
+            this._width += (-1 * x);
+            this._height += y;
         } else if (this.isRightBottomSelected) {
-            this.__width += x;
-            this.__height += y;
+            this._width += x;
+            this._height += y;
+        }
+    }
+
+    public updateLinePoses(): void {
+        if (this.linePoints) {
+            let i: any;
+            for (i in this.linePoints) {
+                this.linePoints[i].updateLinePos();
+            }
         }
     }
 
@@ -321,35 +303,18 @@ export class XEntity extends XGraphics {
             this.isRightBottomSelected = true;
         }
 
-        // {{{
-        let stage: XStage = <XStage>this.parent;
+        this.oldPosition = this.data.getLocalPosition(<XStage>this.parent);
 
-        this.oldPosition = this.data.getLocalPosition(stage);
+        this.setSelected(true);
 
-        clickAndDblClickHandler.call(
-            this,
-            function () {
-
-            },
-            function () {
-                console.log("hi");
-                stage.emitEvent(EventType.EVT_EDIT_ENTITY, this);
-                this.redraw();
-            }
-        );
-
-        stage.entitySelected(this, this.selected == false);
-        // }}}
-
-        this.selected = true;
-        this._dragging = true;
+        this.dragging = DragState.READY;
 
         this.redraw();
 
     }
 
     private onMouseUp(evt: any): any {
-        this._dragging = false;
+        this.dragging = DragState.ENDED;
         this.isLeftTopSelected = false;
         this.isRightTopSelected = false;
         this.isLeftBottomSelected = false;
@@ -358,15 +323,19 @@ export class XEntity extends XGraphics {
     }
 
     private onMouseUpOutside(evt: any): any {
-        this._dragging = false;
-        this.selected = false;
+        this.dragging = DragState.ENDED;
+        this.setSelected(false);
         this.redraw();
     }
 
     public onMouseMove(evt: any): any {
+        if (this.dragging == DragState.READY) {
+            this.dragging = DragState.DRAGGING;
+        }
+
         let stage: XStage = <XStage>this.parent;
 
-        if (this._dragging && stage.state == State.SELECT) {
+        if (this.dragging == DragState.DRAGGING && stage.getState() == State.SELECT) {
             let newPosition: any  = this.data.getLocalPosition(stage);
 
             let delta: any = getXYDelta(
@@ -383,15 +352,10 @@ export class XEntity extends XGraphics {
                 this.resizeEntity(delta.x, delta.y);
             } else {
                 this.moveEntity(delta.x, delta.y);
-                stage.moveAnotherEntityIfExist(delta.x, delta.y);
+                stage.moveSelectedEntity(delta.x, delta.y);
             }
 
-            if (this.linePoints) {
-                let i: any;
-                for (i in this.linePoints) {
-                    this.linePoints[i].updateLinePos();
-                }
-            }
+            this.updateLinePoses();
 
             this.oldPosition = newPosition;
 
