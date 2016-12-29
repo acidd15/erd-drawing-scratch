@@ -5,7 +5,7 @@ require("module/pixijs-4.3.0/pixi.js");
 import {XStage} from "./stage";
 import {XLine} from "./line";
 import {XGraphics} from "./graphics";
-import {State, EventType, DragState} from "./types";
+import {State, DragState} from "./types";
 
 import {getXYDelta} from "./library";
 
@@ -18,13 +18,10 @@ export class XEntity extends XGraphics {
     private bodyContainer: PIXI.Graphics;
     private linePoints: XLine[];
     private _name: PIXI.Text;
-    private dragging: DragState;
     private isLeftTopSelected: boolean;
     private isRightTopSelected: boolean;
     private isLeftBottomSelected: boolean;
     private isRightBottomSelected: boolean;
-    private data: any;
-    private oldPosition: any;
 
     constructor(x: number, y: number, width: number, height: number, color: number) {
         super();
@@ -110,11 +107,11 @@ export class XEntity extends XGraphics {
     }
     */
 
-    public addLinePoint(obj: any): void {
+    public addLinePoint(obj: XLine): void {
         this.linePoints.push(obj);
     }
 
-    public getLinePoints(): any {
+    public getLinePoints(): XLine[] {
         return this.linePoints;
     }
 
@@ -130,7 +127,7 @@ export class XEntity extends XGraphics {
         }
     }
 
-    private clipBodyContainer() {
+    private clipBodyContainer(): void {
         let clip: PIXI.Graphics = <PIXI.Graphics>this.bodyContainer.mask;
 
         if (!clip) {
@@ -151,10 +148,10 @@ export class XEntity extends XGraphics {
         if (this.isSelected()) {
             this.beginFill(0x00, 1);
 
-            let lt: any = this.getLeftTopHandleRect();
-            let rt: any = this.getRightTopHandleRect();
-            let lb: any = this.getLeftBottomHandleRect();
-            let rb: any = this.getRightBottomHandleRect();
+            let lt: PIXI.Rectangle = this.getLeftTopHandleRect();
+            let rt: PIXI.Rectangle = this.getRightTopHandleRect();
+            let lb: PIXI.Rectangle = this.getLeftBottomHandleRect();
+            let rb: PIXI.Rectangle = this.getRightBottomHandleRect();
 
             this.drawRect(lt.x, lt.y, lt.width, lt.height);
             this.drawRect(rt.x, rt.y, rt.width, rt.height);
@@ -172,44 +169,24 @@ export class XEntity extends XGraphics {
         return new PIXI.Point(cx, cy);
     }
 
-    private getLeftTopHandleRect(): Object{
-        return {
-            x: -10,
-            y: -10,
-            width: 10,
-            height: 10
-        };
+    private getLeftTopHandleRect(): PIXI.Rectangle {
+        return new PIXI.Rectangle(-10, -10, 10, 10);
     }
 
-    private getRightTopHandleRect(): Object {
-        return {
-            x: this._width,
-            y: -10,
-            width: 10,
-            height: 10
-        };
+    private getRightTopHandleRect(): PIXI.Rectangle {
+        return new PIXI.Rectangle(this._width, -10, 10, 10);
     }
 
-    private getLeftBottomHandleRect(): Object {
-        return {
-            x: -10,
-            y: this._height,
-            width: 10,
-            height: 10
-        };
+    private getLeftBottomHandleRect(): PIXI.Rectangle {
+        return new PIXI.Rectangle(-10, this._height, 10, 10);
     }
 
-    private getRightBottomHandleRect(): Object {
-        return {
-            x: this._width,
-            y: this._height,
-            width: 10,
-            height: 10
-        };
+    private getRightBottomHandleRect(): PIXI.Rectangle {
+        return new PIXI.Rectangle(this._width, this._height, 10, 10);
     }
 
     /*
-    private isResizeHandle(pos: any): boolean {
+    private isResizeHandle(pos: PIXI.Point): boolean {
         if (
             this.isPosInLeftTop(pos)
             || this.isPosInRightTop(pos)
@@ -222,7 +199,7 @@ export class XEntity extends XGraphics {
     }
     */
 
-    private isPosInRect(rect: any, pos: any): boolean {
+    private isPosInRect(rect: PIXI.Rectangle, pos: PIXI.Point): boolean {
         if (
             (rect.x <= pos.x && pos.x <= rect.x + rect.width)
             && (rect.y <= pos.y && pos.y <= rect.y + rect.width)
@@ -232,66 +209,66 @@ export class XEntity extends XGraphics {
         return false;
     }
 
-    private isPosInLeftTop(pos: any): boolean {
-        let lt: any = this.getLeftTopHandleRect();
+    private isPosInLeftTop(pos: PIXI.Point): boolean {
+        let lt: PIXI.Rectangle = this.getLeftTopHandleRect();
         return this.isPosInRect(lt, pos);
     }
 
-    private isPosInRightTop(pos: any): boolean {
-        let rt: any = this.getRightTopHandleRect();
+    private isPosInRightTop(pos: PIXI.Point): boolean {
+        let rt: PIXI.Rectangle = this.getRightTopHandleRect();
         return this.isPosInRect(rt, pos);
     }
 
-    private isPosInLeftBottom(pos: any): boolean {
-        let lb: any = this.getLeftBottomHandleRect();
+    private isPosInLeftBottom(pos: PIXI.Point): boolean {
+        let lb: PIXI.Rectangle = this.getLeftBottomHandleRect();
         return this.isPosInRect(lb, pos);
     }
 
-    private isPosInRightBottom(pos: any): boolean {
-        let rb: any = this.getRightBottomHandleRect();
+    private isPosInRightBottom(pos: PIXI.Point): boolean {
+        let rb: PIXI.Rectangle = this.getRightBottomHandleRect();
         return this.isPosInRect(rb, pos);
     }
 
-    public moveEntity(x: number, y: number): void {
-        this.position.x += x;
-        this.position.y += y;
+    public moveEntity(xDelta: number, yDelta: number): void {
+        this.position.x += xDelta;
+        this.position.y += yDelta;
     }
 
-    private resizeEntity(x: number, y: number): void {
+    private resizeEntity(xDelta: number, yDelta: number): void {
         if (this.isLeftTopSelected) {
-            this.position.x += x;
-            this.position.y += y;
-            this._width += (-1 * x);
-            this._height += (-1 * y);
+            this.position.x += xDelta;
+            this.position.y += yDelta;
+            this._width += (-1 * xDelta);
+            this._height += (-1 * yDelta);
         } else if (this.isRightTopSelected) {
-            this.position.y += y;
-            this._width += x;
-            this._height += (-1 * y);
+            this.position.y += yDelta;
+            this._width += xDelta;
+            this._height += (-1 * yDelta);
         } else if (this.isLeftBottomSelected) {
-            this.position.x += x;
-            this._width += (-1 * x);
-            this._height += y;
+            this.position.x += xDelta;
+            this._width += (-1 * xDelta);
+            this._height += yDelta;
         } else if (this.isRightBottomSelected) {
-            this._width += x;
-            this._height += y;
+            this._width += xDelta;
+            this._height += yDelta;
         }
     }
 
-    public updateLinePoses(): void {
+    public updateLinePoses(xDelta: number, yDelta: number): void {
         if (this.linePoints) {
-            let i: any;
-            for (i in this.linePoints) {
-                this.linePoints[i].updateLinePos();
+            for (let v of this.linePoints) {
+                v.updateLinePoints(this, xDelta, yDelta);
+                v.redraw();
             }
         }
     }
 
-    private onMouseDown(evt: any): void {
+    protected onMouseDown(evt: PIXI.interaction.InteractionEvent): void {
+        super.onMouseDown(evt);
+
         this.bringToFront();
 
-        this.data = evt.data;
-
-        var lPos = this.toLocal(evt.data.global);
+        let lPos: PIXI.Point = this.toLocal(evt.data.global);
 
         if (this.isPosInLeftTop(lPos)) {
             this.isLeftTopSelected = true;
@@ -303,18 +280,15 @@ export class XEntity extends XGraphics {
             this.isRightBottomSelected = true;
         }
 
-        this.oldPosition = this.data.getLocalPosition(<XStage>this.parent);
-
         this.setSelected(true);
-
-        this.dragging = DragState.READY;
 
         this.redraw();
 
     }
 
-    private onMouseUp(evt: any): any {
-        this.dragging = DragState.ENDED;
+    protected onMouseUp(evt: PIXI.interaction.InteractionEvent): void {
+        super.onMouseUp(evt);
+
         this.isLeftTopSelected = false;
         this.isRightTopSelected = false;
         this.isLeftBottomSelected = false;
@@ -322,25 +296,24 @@ export class XEntity extends XGraphics {
         this.redraw();
     }
 
-    private onMouseUpOutside(evt: any): any {
-        this.dragging = DragState.ENDED;
+    protected onMouseUpOutside(evt: PIXI.interaction.InteractionEvent): void {
+        super.onMouseUpOutside(evt);
+
         this.setSelected(false);
         this.redraw();
     }
 
-    public onMouseMove(evt: any): any {
-        if (this.dragging == DragState.READY) {
-            this.dragging = DragState.DRAGGING;
-        }
+    protected onMouseMove(evt: PIXI.interaction.InteractionEvent): void {
+        super.onMouseMove(evt);
 
         let stage: XStage = <XStage>this.parent;
 
         if (this.dragging == DragState.DRAGGING && stage.getState() == State.SELECT) {
-            let newPosition: any  = this.data.getLocalPosition(stage);
+            let newPosition: PIXI.Point  = this.prevInteractionData.getLocalPosition(stage);
 
             let delta: any = getXYDelta(
-                newPosition.x, newPosition.y,
-                this.oldPosition.x, this.oldPosition.y
+                new PIXI.Point(newPosition.x, newPosition.y),
+                new PIXI.Point(this.oldPosition.x, this.oldPosition.y)
             );
 
             if (
@@ -355,7 +328,7 @@ export class XEntity extends XGraphics {
                 stage.moveSelectedEntity(delta.x, delta.y);
             }
 
-            this.updateLinePoses();
+            this.updateLinePoses(delta.x, delta.y);
 
             this.oldPosition = newPosition;
 

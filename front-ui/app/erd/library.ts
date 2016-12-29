@@ -1,6 +1,11 @@
+/// <reference path="../../module/pixi-typescript/pixi.js.d.ts" />
+
+require("module/pixijs-4.3.0/pixi.js");
+
 /*
  * https://github.com/kittykatattack/learningPixi#keyboard
  */
+import Point = PIXI.Point;
 export function keyboard(keyCode: any): any {
     let key: any = {};
     key.code = keyCode;
@@ -41,16 +46,27 @@ export function keyboard(keyCode: any): any {
     return key;
 }
 
-export function getXYDelta(x1: number, y1: number, x2: number, y2: number): any {
+export function getXYDelta(from: PIXI.Point, to: PIXI.Point): any {
     return {
-        x: x1 - x2,
-        y: y1 - y2
+        x: from.x - to.x,
+        y: from.y - to.y
     };
 }
 
-export function getInvFactor(x1: number, y1: number, x2: number, y2: number): any {
+export function getInvFactor(from: PIXI.Point, to: PIXI.Point): any {
     return {
-        x: (x1 < x2) ? -1 : 1,
-        y: (y1 < y2) ? -1 : 1
+        x: (from.x < to.x) ? -1 : 1,
+        y: (from.y < to.y) ? -1 : 1
     };
+}
+
+export function getRectangle(from: PIXI.Point, to: PIXI.Point): PIXI.Rectangle {
+    let inv: any  = getInvFactor(from, to);
+
+    return new PIXI.Rectangle(
+        inv.x == 1 ? to.x : from.x,
+        inv.y == 1 ? to.y : from.y,
+        inv.x == 1 ? from.x - to.x : to.x - from.x,
+        inv.y == 1 ? from.y - to.y : to.y - from.y
+    );
 }

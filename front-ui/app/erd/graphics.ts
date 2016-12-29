@@ -1,10 +1,17 @@
 /// <reference path="../../module/pixi-typescript/pixi.js.d.ts" />
 
+
 require("module/pixijs-4.3.0/pixi.js");
+
+import {XStage} from "./stage";
+import {DragState} from "./types";
 
 export class XGraphics extends PIXI.Graphics {
     private selected: boolean;
     private selectedNewly: boolean;
+    protected dragging: DragState;
+    protected oldPosition: PIXI.Point;
+    protected prevInteractionData: PIXI.interaction.InteractionData;
 
     constructor() {
         super();
@@ -16,7 +23,7 @@ export class XGraphics extends PIXI.Graphics {
         return this.selected;
     }
 
-    public setSelected(v: boolean) {
+    public setSelected(v: boolean): void {
         if (this.selected == false) {
             this.selectedNewly = true;
         } else {
@@ -36,8 +43,9 @@ export class XGraphics extends PIXI.Graphics {
     //@Override
     public bringToFront(): void {
         if (this.parent) {
-            this.parent.removeChild(this);
-            this.parent.addChild(this);
+            var parent = this.parent;
+            parent.removeChild(this);
+            parent.addChild(this);
         }
     }
 
@@ -56,4 +64,26 @@ export class XGraphics extends PIXI.Graphics {
             }
         }
     }
+
+    protected onMouseDown(evt: PIXI.interaction.InteractionEvent): void {
+        this.dragging = DragState.READY;
+        this.prevInteractionData = evt.data;
+        this.oldPosition = evt.data.getLocalPosition(<XStage>this.parent);
+    }
+
+    protected onMouseUp(evt: PIXI.interaction.InteractionEvent): void {
+        this.dragging = DragState.ENDED;
+    }
+
+    protected onMouseUpOutside(evt: PIXI.interaction.InteractionEvent): void {
+        this.dragging = DragState.ENDED;
+    }
+
+    protected onMouseMove(evt: PIXI.interaction.InteractionEvent): void {
+        if (this.dragging == DragState.READY) {
+            this.dragging = DragState.DRAGGING;
+        }
+    }
+
+
 }

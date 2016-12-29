@@ -30,11 +30,11 @@ export class XContainer extends PIXI.Container {
         }
     }
 
-    protected onMouseDown(evt: any): void {
+    protected onMouseDown(evt: PIXI.interaction.InteractionEvent): void {
         if (typeof this.clickCount == "undefined") {
             this.clickCount = 1;
 
-            let _self: any = this;
+            let _self: XContainer = this;
             setTimeout(
                 () => {
                     // double click
@@ -51,7 +51,7 @@ export class XContainer extends PIXI.Container {
         this.clickCount = 2;
     }
 
-    protected onMouseDblClick(evt: any): void {
+    protected onMouseDblClick(evt: PIXI.interaction.InteractionEvent): void {
 
     }
 }

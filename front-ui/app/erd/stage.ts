@@ -55,7 +55,7 @@ export class XStage extends XContainer {
         return this.keyboard;
     }
 
-    public emitEvent(evtType: EventType, data: any): void {
+    public emitEvent(evtType: EventType, data: Function): void {
         if (this.eventMap[evtType]) {
             this.eventMap[evtType].call(this, data);
         }
@@ -65,21 +65,21 @@ export class XStage extends XContainer {
         this.state = state;
     }
 
-    public moveSelectedEntity(x: number, y: number): void {
+    public moveSelectedEntity(xDelta: number, yDelta: number): void {
         for (let v of this.children) {
             if (
                 v instanceof XEntity
                 && (<XEntity>v).isSelected() == true
                 && this.curSelectedByClick != (<XEntity>v)
             ) {
-                (<XEntity>v).moveEntity(x, y);
+                (<XEntity>v).moveEntity(xDelta, yDelta);
                 (<XEntity>v).redraw();
-                (<XEntity>v).updateLinePoses();
+                (<XEntity>v).updateLinePoses(xDelta, yDelta);
             }
         }
     }
 
-    private addUnnamedEntity(pos: any): void {
+    private addUnnamedEntity(pos: PIXI.Point): void {
         let entity: XEntity = new XEntity(pos.x, pos.y, 200, 300, 0xcccccc);
         entity.setName("Unnamed Entity");
         this.addChild(entity);
@@ -106,7 +106,7 @@ export class XStage extends XContainer {
         }
     }
 
-    public setEventHandler(evtType: EventType, handler: (evt: any) => void): void {
+    public setEventHandler(evtType: EventType, handler: (evt: PIXI.interaction.InteractionEvent) => void): void {
         this.eventMap[evtType] = handler;
     }
 
@@ -159,22 +159,36 @@ export class XStage extends XContainer {
         }
     }
 
-    protected onMouseDown(evt: any): void {
+    protected onMouseDown(evt: PIXI.interaction.InteractionEvent): void {
         this.dragging = DragState.READY;
 
         this.oldPosition.x = evt.data.global.x;
         this.oldPosition.y = evt.data.global.y;
 
-        this.curSelectedByClick = !(evt.target instanceof XStage) ? evt.target : undefined;
+        this.curSelectedByClick = !(evt.target instanceof XStage) ? <XGraphics>evt.target : undefined;
 
         if (this.curSelectedByClick) {
-            this.childSelected = true;
+            if (this.curSelectedByClick instanceof XEntity) {
+                this.childSelected = true;
+            } else {
+                this.childSelected = false;
+            }
         } else {
             this.childSelected = false;
         }
 
         if (!this.childSelected) {
-            this.selectionRect.show(this.oldPosition.x, this.oldPosition.y);
+            if (
+                (
+                    this.curSelectedByClick
+                    && this.curSelectedByClick instanceof XLine
+                    && this.curSelectedByClick.defaultCursor != "col-resize"
+                    && this.curSelectedByClick.defaultCursor != "row-resize"
+                )
+                || !this.curSelectedByClick
+            ) {
+                this.selectionRect.show(this.oldPosition.x, this.oldPosition.y);
+            }
         }
 
         if (this.state == State.ADD_RELATION) {
@@ -200,14 +214,14 @@ export class XStage extends XContainer {
         super.onMouseDown(evt);
     }
 
-    private onMouseUp(evt: any): void {
+    private onMouseUp(evt: PIXI.interaction.InteractionEvent): void {
         this.dragging = DragState.ENDED;
 
         if (this.selectionRect.visible) {
             if (this.state == State.SELECT) {
                 let invFactor: any = getInvFactor(
-                    evt.data.global.x, evt.data.global.y,
-                    this.selectionRect.position.x, this.selectionRect.position.y
+                    new PIXI.Point(evt.data.global.x, evt.data.global.y),
+                    new PIXI.Point(this.selectionRect.position.x, this.selectionRect.position.y)
                 );
 
                 if (this.evaluateSelection(invFactor)) {
@@ -225,17 +239,17 @@ export class XStage extends XContainer {
         this.prevSelectedByClick = this.curSelectedByClick;
     }
 
-    private onMouseMove(evt: any): void {
+    private onMouseMove(evt: PIXI.interaction.InteractionEvent): void {
         if (this.dragging == DragState.READY) {
             this.dragging = DragState.DRAGGING;
         }
 
         if (this.dragging == DragState.DRAGGING && this.state == State.SELECT) {
-            let newPosition: any = evt.data.global;
+            let newPosition: PIXI.Point = evt.data.global;
 
             let delta: any = getXYDelta(
-                newPosition.x, newPosition.y,
-                this.oldPosition.x, this.oldPosition.y
+                new PIXI.Point(newPosition.x, newPosition.y),
+                new PIXI.Point(this.oldPosition.x, this.oldPosition.y)
             );
 
             if (this.selectionRect.visible) {
@@ -244,7 +258,7 @@ export class XStage extends XContainer {
         }
     }
 
-    protected onMouseDblClick(evt: any): void {
+    protected onMouseDblClick(evt: PIXI.interaction.InteractionEvent): void {
         if (evt.target instanceof XEntity && this.eventMap[EventType.EVT_EDIT_ENTITY]) {
             this.eventMap[EventType.EVT_EDIT_ENTITY](evt);
         }

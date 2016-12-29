@@ -6,7 +6,7 @@ export enum State {
 
 export enum EventType {
     EVT_EDIT_ENTITY
-}
+};
 
 export enum DragState {
     READY,
