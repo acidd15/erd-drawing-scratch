@@ -182,8 +182,7 @@ export class XStage extends XContainer {
                 (
                     this.curSelectedByClick
                     && this.curSelectedByClick instanceof XLine
-                    && this.curSelectedByClick.defaultCursor != "col-resize"
-                    && this.curSelectedByClick.defaultCursor != "row-resize"
+                    && (<XLine>this.curSelectedByClick).isLineMoving() == false
                 )
                 || !this.curSelectedByClick
             ) {

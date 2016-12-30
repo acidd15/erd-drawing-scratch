@@ -5,7 +5,7 @@ require("module/pixijs-4.3.0/pixi.js");
 import {XStage} from "./stage";
 import {XLine} from "./line";
 import {XGraphics} from "./graphics";
-import {State, DragState} from "./types";
+import {State, DragState, Direction} from "./types";
 
 import {getXYDelta} from "./library";
 
@@ -113,6 +113,11 @@ export class XEntity extends XGraphics {
 
     public getLinePoints(): XLine[] {
         return this.linePoints;
+    }
+
+    public getBodyRectangle(): PIXI.Rectangle {
+        let gPos: PIXI.Point = this.toGlobal(this.bodyContainer.position);
+        return new PIXI.Rectangle(gPos.x, gPos.y, this.bodyContainer.width, this.bodyContainer.height);
     }
 
     private drawBody(): void {
@@ -234,6 +239,20 @@ export class XEntity extends XGraphics {
         this.position.y += yDelta;
     }
 
+    private getCurrentControlDirection(): Direction {
+        if (this.isLeftTopSelected) {
+            return Direction.LEFT_TOP;
+        } else if (this.isRightTopSelected) {
+            return Direction.RIGHT_TOP;
+        } else if (this.isLeftBottomSelected) {
+            return Direction.LEFT_BOTTOM;
+        } else if (this.isRightBottomSelected) {
+            return Direction.RIGHT_BOTTOM;
+        } else {
+            return Direction.NONE;
+        }
+    }
+
     private resizeEntity(xDelta: number, yDelta: number): void {
         if (this.isLeftTopSelected) {
             this.position.x += xDelta;
@@ -256,8 +275,9 @@ export class XEntity extends XGraphics {
 
     public updateLinePoses(xDelta: number, yDelta: number): void {
         if (this.linePoints) {
+            let controlDirection: Direction = this.getCurrentControlDirection();
             for (let v of this.linePoints) {
-                v.updateLinePoints(this, xDelta, yDelta);
+                v.updateLinePoints(this, controlDirection, xDelta, yDelta);
                 v.redraw();
             }
         }
@@ -309,7 +329,7 @@ export class XEntity extends XGraphics {
         let stage: XStage = <XStage>this.parent;
 
         if (this.dragging == DragState.DRAGGING && stage.getState() == State.SELECT) {
-            let newPosition: PIXI.Point  = this.prevInteractionData.getLocalPosition(stage);
+            let newPosition: PIXI.Point = this.prevInteractionData.getLocalPosition(stage);
 
             let delta: any = getXYDelta(
                 new PIXI.Point(newPosition.x, newPosition.y),

@@ -60,13 +60,13 @@ export function getInvFactor(from: PIXI.Point, to: PIXI.Point): any {
     };
 }
 
-export function getRectangle(from: PIXI.Point, to: PIXI.Point): PIXI.Rectangle {
+export function getHitRectangle(from: PIXI.Point, to: PIXI.Point): PIXI.Rectangle {
     let inv: any  = getInvFactor(from, to);
 
     return new PIXI.Rectangle(
-        inv.x == 1 ? to.x : from.x,
-        inv.y == 1 ? to.y : from.y,
-        inv.x == 1 ? from.x - to.x : to.x - from.x,
-        inv.y == 1 ? from.y - to.y : to.y - from.y
+        (inv.x == 1 ? to.x : from.x) - 5,
+        (inv.y == 1 ? to.y : from.y) - 5,
+        (inv.x == 1 ? from.x - to.x : to.x - from.x) + 10,
+        (inv.y == 1 ? from.y - to.y : to.y - from.y) + 10
     );
 }

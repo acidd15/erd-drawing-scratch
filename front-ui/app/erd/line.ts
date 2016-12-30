@@ -4,14 +4,17 @@ require("module/pixijs-4.3.0/pixi.js");
 
 import {XEntity} from "./entity";
 import {XGraphics} from "./graphics";
-import {DragState, State} from "./types";
+import {DragState, State, Direction} from "./types";
 import {XStage} from "./stage";
 
-import {getRectangle, getXYDelta} from "./library";
+import {getHitRectangle, getXYDelta, getInvFactor} from "./library";
 
 export class XLine extends XGraphics {
 
     private linePoints: PIXI.Point[];
+    private lineDirections: Direction[];
+    private isFromLineMove: boolean;
+    private isToLineMove: boolean;
 
     constructor(private from: XEntity, private to: XEntity) {
         super();
@@ -20,10 +23,14 @@ export class XLine extends XGraphics {
         this.buttonMode = true;
         this.defaultCursor = "default";
 
+        this.isFromLineMove = false;
+        this.isToLineMove = false;
+
         this.from.addLinePoint(this);
         this.to.addLinePoint(this);
 
         this.linePoints = [,,,];
+        this.lineDirections = [,,,];
         this.initLinePoints();
 
         this.redraw();
@@ -49,16 +56,110 @@ export class XLine extends XGraphics {
     }
 
     private initLinePoints(): void {
-        this.updateLinePoints(undefined, 0, 0);
+        this.updateLinePoints(undefined, Direction.NONE, 0, 0);
+
+        let body: PIXI.Rectangle = this.from.getBodyRectangle();
+
+        if (body.y == this.linePoints[0].y) {
+            this.lineDirections[0] = Direction.TOP;
+        } else if (body.x == this.linePoints[0].x) {
+            this.lineDirections[0] = Direction.LEFT;
+        } else if (body.x + body.width -1 <= this.linePoints[0].x && this.linePoints[0].x <= body.x + body.width +1) {
+            this.lineDirections[0] = Direction.RIGHT;
+        } else if (body.y + body.height -1 <= this.linePoints[0].y && this.linePoints[0].y <= body.y + body.height +1) {
+            this.lineDirections[0] = Direction.BOTTOM;
+        } else {
+            this.lineDirections[0] = Direction.NONE;
+        }
+
+        body = this.to.getBodyRectangle();
+
+        if (body.y == this.linePoints[3].y) {
+            this.lineDirections[3] = Direction.TOP;
+        } else if (body.x == this.linePoints[3].x) {
+            this.lineDirections[3] = Direction.LEFT;
+        } else if (body.x + body.width -1 <= this.linePoints[3].x && this.linePoints[3].x <= body.x + body.width +1) {
+            this.lineDirections[3] = Direction.RIGHT;
+        } else if (body.y + body.height -1 <= this.linePoints[3].y && this.linePoints[3].y <= body.y + body.height +1) {
+            this.lineDirections[3] = Direction.BOTTOM;
+        } else {
+            this.lineDirections[0] = Direction.NONE;
+        }
+
+        console.log(this.lineDirections);
     }
 
-    public updateLinePoints(target: XEntity, xDelta: number, yDelta: number): void {
+    private updateFromLine(from: XEntity, xDelta: number, yDelta: number): void {
+        let rect: PIXI.Rectangle = from.getBodyRectangle();
+
+        let toBeX: number = this.linePoints[0].x + xDelta;
+        let toBeY: number = this.linePoints[0].y + yDelta;
+
+        if (rect.y + 10 <= toBeY && toBeY <= rect.y + rect.height - 10) {
+            this.linePoints[0].x = toBeX;
+            this.linePoints[0].y = toBeY;
+        }
+    }
+
+    private updateToLine(to: XEntity, xDelta: number, yDelta: number): void {
+        let rect: PIXI.Rectangle = to.getBodyRectangle();
+
+        let toBeX: number = this.linePoints[3].x + xDelta;
+        let toBeY: number = this.linePoints[3].y + yDelta;
+
+        if (rect.y + 10 <= toBeY && toBeY <= rect.y + rect.height - 10) {
+            this.linePoints[3].x = toBeX;
+            this.linePoints[3].y = toBeY;
+        }
+
+        console.log(["updateToLine", toBeX, toBeY]);
+    }
+
+    public updateLinePoints(target: XEntity, controlDirection: Direction, xDelta: number, yDelta: number): void {
         if (target == this.from) {
-            this.linePoints[0].x += xDelta;
-            this.linePoints[0].y += yDelta;
+            console.log(controlDirection);
+            if (controlDirection == undefined) {
+                this.updateFromLine(target, xDelta, yDelta);
+            } else {
+                if (controlDirection == Direction.LEFT_TOP
+                    && (this.lineDirections[0] == Direction.LEFT || this.lineDirections[0] == Direction.TOP)) {
+                    this.updateFromLine(target, xDelta, yDelta);
+                }
+                if (controlDirection == Direction.RIGHT_TOP
+                    && (this.lineDirections[0] == Direction.RIGHT || this.lineDirections[0] == Direction.TOP)) {
+                    this.updateFromLine(target, xDelta, yDelta);
+                }
+                if (controlDirection == Direction.LEFT_BOTTOM
+                    && (this.lineDirections[0] == Direction.LEFT || this.lineDirections[0] == Direction.BOTTOM)) {
+                    this.updateFromLine(target, xDelta, yDelta);
+                }
+                if (controlDirection == Direction.RIGHT_BOTTOM
+                    && (this.lineDirections[0] == Direction.RIGHT || this.lineDirections[0] == Direction.BOTTOM)) {
+                    this.updateFromLine(target, xDelta, yDelta);
+                }
+            }
         } else if(target == this.to) {
-            this.linePoints[3].x += xDelta;
-            this.linePoints[3].y += yDelta;
+            if (controlDirection == undefined) {
+                this.updateToLine(target, xDelta, yDelta);
+            } else {
+                if (controlDirection == Direction.LEFT_TOP
+                    && (this.lineDirections[3] == Direction.LEFT || this.lineDirections[3] == Direction.TOP)) {
+                    this.updateToLine(target, xDelta, yDelta);
+                }
+                if (controlDirection == Direction.RIGHT_TOP
+                    && (this.lineDirections[3] == Direction.RIGHT || this.lineDirections[3] == Direction.TOP)) {
+                    this.updateToLine(target, xDelta, yDelta);
+                }
+                if (controlDirection == Direction.LEFT_BOTTOM
+                    && (this.lineDirections[3] == Direction.LEFT || this.lineDirections[3] == Direction.BOTTOM)) {
+                    this.updateToLine(target, xDelta, yDelta);
+                }
+                if (controlDirection == Direction.RIGHT_BOTTOM
+                    && (this.lineDirections[3] == Direction.RIGHT || this.lineDirections[3] == Direction.BOTTOM)) {
+                    this.updateToLine(target, xDelta, yDelta);
+                }
+            }
+
         } else {
             let linePos: any = this.getEntityCenterLinePos();
             this.linePoints[0] = linePos.fromPos;
@@ -71,8 +172,12 @@ export class XLine extends XGraphics {
         this.linePoints[2] = new PIXI.Point(cx, this.linePoints[3].y);
     }
 
+    public isLineMoving(): boolean {
+            return this.isFromLineMove || this.isToLineMove;
+    }
+
     private updateHitArea(): void {
-        this.hitArea = getRectangle(this.linePoints[0], this.linePoints[3]);
+        this.hitArea = getHitRectangle(this.linePoints[0], this.linePoints[3]);
     }
 
     private getEntityCenterLinePos(): any {
@@ -101,6 +206,25 @@ export class XLine extends XGraphics {
 
         this.lineStyle(1, 0x00, 1);
 
+        // from point
+        this.beginFill(0xff, 0);
+        this.drawRect(this.linePoints[0].x-5, this.linePoints[0].y-5, 10, 10);
+        this.endFill();
+
+        // angled line point
+        this.beginFill(0xff, 0);
+        this.drawRect(this.linePoints[1].x-5, this.linePoints[1].y-5, 10, 10);
+        this.endFill();
+
+        this.beginFill(0xff, 0);
+        this.drawRect(this.linePoints[2].x-5, this.linePoints[2].y-5, 10, 10);
+        this.endFill();
+
+        // to point
+        this.beginFill(0xff, 0);
+        this.drawRect(this.linePoints[3].x-5, this.linePoints[3].y-5, 10, 10);
+        this.endFill();
+
         let i: any;
         for (i in this.linePoints) {
             if (i == 0) {
@@ -111,14 +235,20 @@ export class XLine extends XGraphics {
         }
     }
 
+    private isMouseInFromLine(localPos: PIXI.Point) {
+        return (this.linePoints[0].y -5 <= localPos.y && localPos.y <= this.linePoints[1].y +5)
+            && ((this.linePoints[0].x <= localPos.x && localPos.x <= this.linePoints[1].x)
+            || (this.linePoints[1].x <= localPos.x && localPos.x <= this.linePoints[0].x));
+    }
+
+    private isMouseInToLine(localPos: PIXI.Point) {
+        return (this.linePoints[3].y -5 <= localPos.y && localPos.y <= this.linePoints[3].y +5)
+            && ((this.linePoints[2].x <= localPos.x && localPos.x <= this.linePoints[3].x)
+            || (this.linePoints[3].x <= localPos.x && localPos.x <= this.linePoints[2].x));
+    }
+
     private updateDefaultCursor(localPos: PIXI.Point) {
-        /*
-        if (this.linePoints[1].x -1 <= localPos.x && localPos.x <= this.linePoints[1].x +1) {
-            this.defaultCursor = "col-resize";
-        } else */if (
-            (this.linePoints[0].y -1 <= localPos.y && localPos.y <= this.linePoints[1].y +1)
-            || (this.linePoints[3].y -1 <= localPos.y && localPos.y <= this.linePoints[3].y +1)
-        ) {
+        if (this.isMouseInFromLine(localPos) || this.isMouseInToLine(localPos)) {
             this.defaultCursor = "row-resize";
         } else {
             this.defaultCursor = "default";
@@ -127,16 +257,31 @@ export class XLine extends XGraphics {
 
     protected onMouseDown(evt: PIXI.interaction.InteractionEvent): void {
         super.onMouseDown(evt);
+
+        let localPos: PIXI.Point = evt.data.getLocalPosition(this.parent);
+
+        if (this.isMouseInFromLine(localPos)) {
+            this.isFromLineMove = true;
+        } else if (this.isMouseInToLine(localPos)) {
+            this.isToLineMove = true;
+        } else {
+            this.isFromLineMove = false;
+            this.isToLineMove = false;
+        }
     }
 
     protected onMouseUp(evt: PIXI.interaction.InteractionEvent): void {
         super.onMouseUp(evt);
+
+        this.isFromLineMove = false;
+        this.isToLineMove = false;
     }
 
     protected onMouseUpOutside(evt: PIXI.interaction.InteractionEvent): void {
         super.onMouseUpOutside(evt);
 
-        this.defaultCursor = "default";
+        this.isFromLineMove = false;
+        this.isToLineMove = false;
     }
 
     protected onMouseMove(evt: PIXI.interaction.InteractionEvent): void {
@@ -148,8 +293,8 @@ export class XLine extends XGraphics {
 
         if (
             this.dragging != DragState.DRAGGING
-            && this.defaultCursor != "row-resize"
-            && this.defaultCursor != "col-resize"
+            && this.isFromLineMove == false
+            && this.isToLineMove == false
         ) {
             this.updateDefaultCursor(localPos);
         }
@@ -162,16 +307,13 @@ export class XLine extends XGraphics {
                 new PIXI.Point(this.oldPosition.x, this.oldPosition.y)
             );
 
-            if (this.defaultCursor == "row-resize") {
-                if (this.linePoints[0].x <= localPos.x && localPos.x <= this.linePoints[1].x) {
-                    this.updateLinePoints(this.from, 0, delta.y);
-                } else if (this.linePoints[2].x <= localPos.x && localPos.x <= this.linePoints[3].x) {
-                    this.updateLinePoints(this.to, 0, delta.y);
-                }
-            }/* else if (this.defaultCursor == "col-resize") {
-            }*/
-
-            this.redraw();
+            if (this.isFromLineMove) {
+                this.updateLinePoints(this.from, Direction.NONE, 0, delta.y);
+                this.redraw();
+            } else if (this.isToLineMove) {
+                this.updateLinePoints(this.to, Direction.NONE, 0, delta.y);
+                this.redraw();
+            }
 
             this.oldPosition = newPosition;
 
