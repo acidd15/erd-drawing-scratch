@@ -7,7 +7,7 @@ import {XGraphics} from "./graphics";
 import {DragState, State, Direction} from "./types";
 import {XStage} from "./stage";
 
-import {getHitRectangle, getXYDelta, getInvFactor} from "./library";
+import {getHitRectangle, getXYDelta} from "./library";
 
 export class XLine extends XGraphics {
 
@@ -58,15 +58,17 @@ export class XLine extends XGraphics {
     private initLinePoints(): void {
         this.updateLinePoints(undefined, Direction.NONE, 0, 0);
 
-        let body: PIXI.Rectangle = this.from.getBodyRectangle();
+        let body: PIXI.Rectangle;
+
+        body = this.from.getBodyRectangle();
 
         if (body.y == this.linePoints[0].y) {
             this.lineDirections[0] = Direction.TOP;
         } else if (body.x == this.linePoints[0].x) {
             this.lineDirections[0] = Direction.LEFT;
-        } else if (body.x + body.width -1 <= this.linePoints[0].x && this.linePoints[0].x <= body.x + body.width +1) {
+        } else if (body.x + body.width - 1 <= this.linePoints[0].x && this.linePoints[0].x <= body.x + body.width + 1) {
             this.lineDirections[0] = Direction.RIGHT;
-        } else if (body.y + body.height -1 <= this.linePoints[0].y && this.linePoints[0].y <= body.y + body.height +1) {
+        } else if (body.y + body.height - 1 <= this.linePoints[0].y && this.linePoints[0].y <= body.y + body.height + 1) {
             this.lineDirections[0] = Direction.BOTTOM;
         } else {
             this.lineDirections[0] = Direction.NONE;
@@ -78,9 +80,9 @@ export class XLine extends XGraphics {
             this.lineDirections[3] = Direction.TOP;
         } else if (body.x == this.linePoints[3].x) {
             this.lineDirections[3] = Direction.LEFT;
-        } else if (body.x + body.width -1 <= this.linePoints[3].x && this.linePoints[3].x <= body.x + body.width +1) {
+        } else if (body.x + body.width - 1 <= this.linePoints[3].x && this.linePoints[3].x <= body.x + body.width + 1) {
             this.lineDirections[3] = Direction.RIGHT;
-        } else if (body.y + body.height -1 <= this.linePoints[3].y && this.linePoints[3].y <= body.y + body.height +1) {
+        } else if (body.y + body.height - 1 <= this.linePoints[3].y && this.linePoints[3].y <= body.y + body.height + 1) {
             this.lineDirections[3] = Direction.BOTTOM;
         } else {
             this.lineDirections[0] = Direction.NONE;
@@ -111,55 +113,86 @@ export class XLine extends XGraphics {
             this.linePoints[3].x = toBeX;
             this.linePoints[3].y = toBeY;
         }
-
-        console.log(["updateToLine", toBeX, toBeY]);
     }
 
     public updateLinePoints(target: XEntity, controlDirection: Direction, xDelta: number, yDelta: number): void {
         if (target == this.from) {
-            console.log(controlDirection);
-            if (controlDirection == undefined) {
+            if (controlDirection == Direction.NONE) {
                 this.updateFromLine(target, xDelta, yDelta);
             } else {
                 if (controlDirection == Direction.LEFT_TOP
                     && (this.lineDirections[0] == Direction.LEFT || this.lineDirections[0] == Direction.TOP)) {
+                    if (this.lineDirections[0] == Direction.LEFT) {
+                        yDelta = 0;
+                    } else if (this.lineDirections[0] == Direction.TOP) {
+                        xDelta = 0;
+                    }
                     this.updateFromLine(target, xDelta, yDelta);
-                }
-                if (controlDirection == Direction.RIGHT_TOP
+                } else if (controlDirection == Direction.RIGHT_TOP
                     && (this.lineDirections[0] == Direction.RIGHT || this.lineDirections[0] == Direction.TOP)) {
+                    if (this.lineDirections[0] == Direction.RIGHT) {
+                        yDelta = 0;
+                    } else if (this.lineDirections[0] == Direction.TOP) {
+                        xDelta = 0;
+                    }
                     this.updateFromLine(target, xDelta, yDelta);
-                }
-                if (controlDirection == Direction.LEFT_BOTTOM
+                } else if (controlDirection == Direction.LEFT_BOTTOM
                     && (this.lineDirections[0] == Direction.LEFT || this.lineDirections[0] == Direction.BOTTOM)) {
+                    if (this.lineDirections[0] == Direction.LEFT) {
+                        yDelta = 0;
+                    } else if (this.lineDirections[0] == Direction.BOTTOM) {
+                        xDelta = 0;
+                    }
                     this.updateFromLine(target, xDelta, yDelta);
-                }
-                if (controlDirection == Direction.RIGHT_BOTTOM
+                } else if (controlDirection == Direction.RIGHT_BOTTOM
                     && (this.lineDirections[0] == Direction.RIGHT || this.lineDirections[0] == Direction.BOTTOM)) {
+                    if (this.lineDirections[0] == Direction.RIGHT) {
+                        yDelta = 0;
+                    } else if (this.lineDirections[0] == Direction.BOTTOM) {
+                        xDelta = 0;
+                    }
                     this.updateFromLine(target, xDelta, yDelta);
                 }
             }
         } else if(target == this.to) {
-            if (controlDirection == undefined) {
+            if (controlDirection == Direction.NONE) {
                 this.updateToLine(target, xDelta, yDelta);
             } else {
+                yDelta = 0;
                 if (controlDirection == Direction.LEFT_TOP
                     && (this.lineDirections[3] == Direction.LEFT || this.lineDirections[3] == Direction.TOP)) {
+                    if (this.lineDirections[3] == Direction.LEFT) {
+                        yDelta = 0;
+                    } else if (this.lineDirections[3] == Direction.TOP) {
+                        xDelta = 0;
+                    }
                     this.updateToLine(target, xDelta, yDelta);
-                }
-                if (controlDirection == Direction.RIGHT_TOP
+                } else if (controlDirection == Direction.RIGHT_TOP
                     && (this.lineDirections[3] == Direction.RIGHT || this.lineDirections[3] == Direction.TOP)) {
+                    if (this.lineDirections[3] == Direction.RIGHT) {
+                        yDelta = 0;
+                    } else if (this.lineDirections[3] == Direction.TOP) {
+                        xDelta = 0;
+                    }
                     this.updateToLine(target, xDelta, yDelta);
-                }
-                if (controlDirection == Direction.LEFT_BOTTOM
+                } else if (controlDirection == Direction.LEFT_BOTTOM
                     && (this.lineDirections[3] == Direction.LEFT || this.lineDirections[3] == Direction.BOTTOM)) {
+                    if (this.lineDirections[3] == Direction.LEFT) {
+                        yDelta = 0;
+                    } else if (this.lineDirections[3] == Direction.BOTTOM) {
+                        xDelta = 0;
+                    }
                     this.updateToLine(target, xDelta, yDelta);
-                }
-                if (controlDirection == Direction.RIGHT_BOTTOM
+                } else if (controlDirection == Direction.RIGHT_BOTTOM
                     && (this.lineDirections[3] == Direction.RIGHT || this.lineDirections[3] == Direction.BOTTOM)) {
+                    if (this.lineDirections[3] == Direction.RIGHT) {
+                        yDelta = 0;
+                    } else if (this.lineDirections[3] == Direction.BOTTOM) {
+                        xDelta = 0;
+                    }
                     this.updateToLine(target, xDelta, yDelta);
                 }
             }
-
         } else {
             let linePos: any = this.getEntityCenterLinePos();
             this.linePoints[0] = linePos.fromPos;
@@ -208,21 +241,21 @@ export class XLine extends XGraphics {
 
         // from point
         this.beginFill(0xff, 0);
-        this.drawRect(this.linePoints[0].x-5, this.linePoints[0].y-5, 10, 10);
+        this.drawRect(this.linePoints[0].x - 5, this.linePoints[0].y - 5, 10, 10);
         this.endFill();
 
         // angled line point
         this.beginFill(0xff, 0);
-        this.drawRect(this.linePoints[1].x-5, this.linePoints[1].y-5, 10, 10);
+        this.drawRect(this.linePoints[1].x - 5, this.linePoints[1].y - 5, 10, 10);
         this.endFill();
 
         this.beginFill(0xff, 0);
-        this.drawRect(this.linePoints[2].x-5, this.linePoints[2].y-5, 10, 10);
+        this.drawRect(this.linePoints[2].x - 5, this.linePoints[2].y - 5, 10, 10);
         this.endFill();
 
         // to point
         this.beginFill(0xff, 0);
-        this.drawRect(this.linePoints[3].x-5, this.linePoints[3].y-5, 10, 10);
+        this.drawRect(this.linePoints[3].x - 5, this.linePoints[3].y - 5, 10, 10);
         this.endFill();
 
         let i: any;
@@ -236,13 +269,13 @@ export class XLine extends XGraphics {
     }
 
     private isMouseInFromLine(localPos: PIXI.Point) {
-        return (this.linePoints[0].y -5 <= localPos.y && localPos.y <= this.linePoints[1].y +5)
+        return (this.linePoints[0].y - 5 <= localPos.y && localPos.y <= this.linePoints[1].y + 5)
             && ((this.linePoints[0].x <= localPos.x && localPos.x <= this.linePoints[1].x)
             || (this.linePoints[1].x <= localPos.x && localPos.x <= this.linePoints[0].x));
     }
 
     private isMouseInToLine(localPos: PIXI.Point) {
-        return (this.linePoints[3].y -5 <= localPos.y && localPos.y <= this.linePoints[3].y +5)
+        return (this.linePoints[3].y - 5 <= localPos.y && localPos.y <= this.linePoints[3].y + 5)
             && ((this.linePoints[2].x <= localPos.x && localPos.x <= this.linePoints[3].x)
             || (this.linePoints[3].x <= localPos.x && localPos.x <= this.linePoints[2].x));
     }
@@ -307,6 +340,8 @@ export class XLine extends XGraphics {
                 new PIXI.Point(this.oldPosition.x, this.oldPosition.y)
             );
 
+            this.oldPosition = newPosition;
+
             if (this.isFromLineMove) {
                 this.updateLinePoints(this.from, Direction.NONE, 0, delta.y);
                 this.redraw();
@@ -314,9 +349,6 @@ export class XLine extends XGraphics {
                 this.updateLinePoints(this.to, Direction.NONE, 0, delta.y);
                 this.redraw();
             }
-
-            this.oldPosition = newPosition;
-
         }
     }
 

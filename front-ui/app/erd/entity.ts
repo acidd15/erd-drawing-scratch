@@ -13,7 +13,7 @@ export class XEntity extends XGraphics {
     private _width: number;
     private _height: number;
     private color: number;
-    //private minSize: any;
+    private minSize: any;
     private itemCount: number;
     private bodyContainer: PIXI.Graphics;
     private linePoints: XLine[];
@@ -32,7 +32,7 @@ export class XEntity extends XGraphics {
         this.position.set(x, y);
 
         this.color = color || 0xFF0000;
-        //this.minSize = {width: 50, height: 50};
+        this.minSize = {width: 50, height: 50};
 
         this.interactive = true;
 
@@ -254,22 +254,37 @@ export class XEntity extends XGraphics {
     }
 
     private resizeEntity(xDelta: number, yDelta: number): void {
+        let wDelta: number = 0;
+        let hDelta: number = 0;
+
         if (this.isLeftTopSelected) {
-            this.position.x += xDelta;
-            this.position.y += yDelta;
-            this._width += (-1 * xDelta);
-            this._height += (-1 * yDelta);
+            wDelta = -1 * xDelta;
+            hDelta = -1 * yDelta;
         } else if (this.isRightTopSelected) {
-            this.position.y += yDelta;
-            this._width += xDelta;
-            this._height += (-1 * yDelta);
+            wDelta = xDelta;
+            hDelta = -1 * yDelta;
+            xDelta = 0;
         } else if (this.isLeftBottomSelected) {
-            this.position.x += xDelta;
-            this._width += (-1 * xDelta);
-            this._height += yDelta;
+            wDelta = -1 * xDelta;
+            hDelta = yDelta;
+            yDelta = 0;
         } else if (this.isRightBottomSelected) {
-            this._width += xDelta;
-            this._height += yDelta;
+            wDelta = xDelta;
+            hDelta = yDelta;
+            xDelta = 0;
+            yDelta = 0;
+        } else {
+            xDelta = 0;
+            yDelta = 0;
+        }
+
+        if (this.minSize.width <= this._width + wDelta) {
+            this.position.x += xDelta;
+            this._width += wDelta;
+        }
+        if (this.minSize.height <= this._height + hDelta) {
+            this.position.y += yDelta;
+            this._height += hDelta;
         }
     }
 
@@ -283,13 +298,7 @@ export class XEntity extends XGraphics {
         }
     }
 
-    protected onMouseDown(evt: PIXI.interaction.InteractionEvent): void {
-        super.onMouseDown(evt);
-
-        this.bringToFront();
-
-        let lPos: PIXI.Point = this.toLocal(evt.data.global);
-
+    private setResizeHandleSelection(lPos: PIXI.Point): void {
         if (this.isPosInLeftTop(lPos)) {
             this.isLeftTopSelected = true;
         } else if (this.isPosInRightTop(lPos)) {
@@ -299,6 +308,29 @@ export class XEntity extends XGraphics {
         } else if (this.isPosInRightBottom(lPos)) {
             this.isRightBottomSelected = true;
         }
+    }
+
+    private unsetResizeHandleSelection(): void {
+        this.isLeftTopSelected = false;
+        this.isRightTopSelected = false;
+        this.isLeftBottomSelected = false;
+        this.isRightBottomSelected = false;
+    }
+
+    private isAnyResizeHandleSelected(): boolean {
+        return this.isLeftTopSelected
+            || this.isRightTopSelected
+            || this.isLeftBottomSelected
+            || this.isRightBottomSelected;
+    }
+
+    protected onMouseDown(evt: PIXI.interaction.InteractionEvent): void {
+        super.onMouseDown(evt);
+
+        this.bringToFront();
+
+        let lPos: PIXI.Point = this.toLocal(evt.data.global);
+        this.setResizeHandleSelection(lPos);
 
         this.setSelected(true);
 
@@ -309,17 +341,16 @@ export class XEntity extends XGraphics {
     protected onMouseUp(evt: PIXI.interaction.InteractionEvent): void {
         super.onMouseUp(evt);
 
-        this.isLeftTopSelected = false;
-        this.isRightTopSelected = false;
-        this.isLeftBottomSelected = false;
-        this.isRightBottomSelected = false;
+        this.unsetResizeHandleSelection();
+
         this.redraw();
     }
 
     protected onMouseUpOutside(evt: PIXI.interaction.InteractionEvent): void {
         super.onMouseUpOutside(evt);
 
-        this.setSelected(false);
+        this.unsetResizeHandleSelection();
+
         this.redraw();
     }
 
@@ -336,21 +367,16 @@ export class XEntity extends XGraphics {
                 new PIXI.Point(this.oldPosition.x, this.oldPosition.y)
             );
 
-            if (
-                this.isLeftTopSelected
-                || this.isRightTopSelected
-                || this.isLeftBottomSelected
-                || this.isRightBottomSelected
-            ) {
+            this.oldPosition = newPosition;
+
+            if (this.isAnyResizeHandleSelected()) {
                 this.resizeEntity(delta.x, delta.y);
             } else {
                 this.moveEntity(delta.x, delta.y);
-                stage.moveSelectedEntity(delta.x, delta.y);
+                stage.moveSelectedEntityGroup(delta.x, delta.y);
             }
 
             this.updateLinePoses(delta.x, delta.y);
-
-            this.oldPosition = newPosition;
 
             this.redraw();
         }

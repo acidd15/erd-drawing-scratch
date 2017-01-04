@@ -65,7 +65,7 @@ export class XStage extends XContainer {
         this.state = state;
     }
 
-    public moveSelectedEntity(xDelta: number, yDelta: number): void {
+    public moveSelectedEntityGroup(xDelta: number, yDelta: number): void {
         for (let v of this.children) {
             if (
                 v instanceof XEntity

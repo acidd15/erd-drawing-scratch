@@ -5,7 +5,7 @@ require("module/pixijs-4.3.0/pixi.js");
 /*
  * https://github.com/kittykatattack/learningPixi#keyboard
  */
-import Point = PIXI.Point;
+
 export function keyboard(keyCode: any): any {
     let key: any = {};
     key.code = keyCode;
