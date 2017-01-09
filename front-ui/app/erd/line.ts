@@ -49,6 +49,25 @@ export class XLine extends XGraphics {
         return this.to;
     }
 
+    public getPoint(entity: XEntity): PIXI.Point {
+        if (this.from == entity) {
+            return this.linePoints[0];
+        } else if (this.to == entity) {
+            return this.linePoints[3];
+        }
+        return undefined;
+    }
+
+
+    public getDirection(entity: XEntity): Direction {
+        if (this.from == entity) {
+            return this.lineDirections[0];
+        } else if (this.to == entity) {
+            return this.lineDirections[3];
+        }
+        return undefined;
+    }
+
     //@Override
     public redraw(): void {
         this.updateHitArea();
@@ -87,8 +106,6 @@ export class XLine extends XGraphics {
         } else {
             this.lineDirections[0] = Direction.NONE;
         }
-
-        console.log(this.lineDirections);
     }
 
     private updateFromLine(from: XEntity, xDelta: number, yDelta: number): void {

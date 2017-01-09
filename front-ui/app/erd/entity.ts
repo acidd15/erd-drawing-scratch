@@ -253,39 +253,38 @@ export class XEntity extends XGraphics {
         }
     }
 
-    private resizeEntity(xDelta: number, yDelta: number): void {
-        let wDelta: number = 0;
-        let hDelta: number = 0;
+    private getMinMaxLinePosition() {
+        let p: any = {
+            x : {
+                min: -1,
+                max: -1
+            },
+            y : {
+                min: -1,
+                max: -1
+            }
+        };
 
-        if (this.isLeftTopSelected) {
-            wDelta = -1 * xDelta;
-            hDelta = -1 * yDelta;
-        } else if (this.isRightTopSelected) {
-            wDelta = xDelta;
-            hDelta = -1 * yDelta;
-            xDelta = 0;
-        } else if (this.isLeftBottomSelected) {
-            wDelta = -1 * xDelta;
-            hDelta = yDelta;
-            yDelta = 0;
-        } else if (this.isRightBottomSelected) {
-            wDelta = xDelta;
-            hDelta = yDelta;
-            xDelta = 0;
-            yDelta = 0;
-        } else {
-            xDelta = 0;
-            yDelta = 0;
+        for (let v of this.linePoints) {
+            let pos: PIXI.Point = v.getPoint(this);
+            let dir: Direction = v.getDirection(this);
+            if (dir == Direction.TOP || dir == Direction.BOTTOM) {
+                if (p.x.min > pos.x || p.x.min == -1) p.x.min = pos.x;
+                if (p.x.max < pos.x || p.x.max == -1) p.x.max = pos.x;
+            } else if (dir == Direction.LEFT || dir == Direction.RIGHT) {
+                if (p.y.min > pos.y || p.y.min == -1) p.y.min = pos.y;
+                if (p.y.max < pos.y || p.y.max == -1) p.y.max = pos.y;
+            }
         }
 
-        if (this.minSize.width <= this._width + wDelta) {
-            this.position.x += xDelta;
-            this._width += wDelta;
-        }
-        if (this.minSize.height <= this._height + hDelta) {
-            this.position.y += yDelta;
-            this._height += hDelta;
-        }
+        return p;
+    }
+
+    private resizeEntity(xDelta: number, yDelta: number, wDelta: number, hDelta: number): void {
+        this.position.x += xDelta;
+        this._width += wDelta;
+        this.position.y += yDelta;
+        this._height += hDelta;
     }
 
     public updateLinePoses(xDelta: number, yDelta: number): void {
@@ -322,6 +321,78 @@ export class XEntity extends XGraphics {
             || this.isRightTopSelected
             || this.isLeftBottomSelected
             || this.isRightBottomSelected;
+    }
+
+    private calculateDeltaBaseOnLinePoint(p: any, pos: PIXI.Point, delta: any): any {
+        if (p.x.min > 0 && p.x.max > 0) {
+            if (p.x.min - 50 <= pos.x && pos.x <= p.x.max + 50) {
+                delta.x = 0;
+            }
+
+            if ((this.isRightTopSelected || this.isRightBottomSelected) && pos.x < p.x.min) {
+                delta.x = 0;
+            } else if ((this.isLeftTopSelected || this.isLeftBottomSelected) && pos.x > p.x.max) {
+                delta.x = 0;
+            }
+        }
+
+        if (p.y.min > 0 && p.y.max > 0) {
+            if (p.y.min - 50 <= pos.y && pos.y <= p.y.max + 50) {
+                delta.y = 0;
+            }
+
+            if ((this.isLeftBottomSelected || this.isRightBottomSelected) && pos.y < p.y.min) {
+                delta.y = 0;
+            } else if ((this.isLeftTopSelected || this.isRightTopSelected) && pos.y > p.y.max) {
+                delta.y = 0;
+            }
+        }
+
+        return delta;
+    }
+
+    private calculateDeltaBaseOnEntityBox(delta: any): any {
+        if (this.isLeftTopSelected) {
+            delta.width = -1 * delta.x;
+            delta.height = -1 * delta.y;
+        } else if (this.isRightTopSelected) {
+            delta.width = delta.x;
+            delta.height = -1 * delta.y;
+            delta.x = 0;
+        } else if (this.isLeftBottomSelected) {
+            delta.width = -1 * delta.x;
+            delta.height = delta.y;
+            delta.y = 0;
+        } else if (this.isRightBottomSelected) {
+            delta.width = delta.x;
+            delta.height = delta.y;
+            delta.x = 0;
+            delta.y = 0;
+        } else {
+            delta.x = 0;
+            delta.y = 0;
+        }
+
+        if (!(this.minSize.width <= this._width + delta.width)) {
+            delta.x = 0;
+            delta.width = 0;
+        }
+
+        if (!(this.minSize.height <= this._height + delta.height)) {
+            delta.y = 0;
+            delta.height = 0;
+        }
+
+        return delta;
+    }
+
+    private calculateResizeBound(pos: PIXI.Point, delta: any): any {
+        let p: any = this.getMinMaxLinePosition();
+
+        delta = this.calculateDeltaBaseOnLinePoint(p, pos, delta);
+        delta = this.calculateDeltaBaseOnEntityBox(delta);
+
+        return delta;
     }
 
     protected onMouseDown(evt: PIXI.interaction.InteractionEvent): void {
@@ -370,13 +441,14 @@ export class XEntity extends XGraphics {
             this.oldPosition = newPosition;
 
             if (this.isAnyResizeHandleSelected()) {
-                this.resizeEntity(delta.x, delta.y);
+                delta = this.calculateResizeBound(newPosition, delta);
+                this.resizeEntity(delta.x, delta.y, delta.width, delta.height);
+                this.updateLinePoses(delta.x || delta.width, delta.y || delta.height);
             } else {
                 this.moveEntity(delta.x, delta.y);
                 stage.moveSelectedEntityGroup(delta.x, delta.y);
+                this.updateLinePoses(delta.x, delta.y);
             }
-
-            this.updateLinePoses(delta.x, delta.y);
 
             this.redraw();
         }
