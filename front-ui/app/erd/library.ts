@@ -60,13 +60,55 @@ export function getInvFactor(from: PIXI.Point, to: PIXI.Point): any {
     };
 }
 
-export function getHitRectangle(from: PIXI.Point, to: PIXI.Point): PIXI.Rectangle {
+export function getRectangle(from: PIXI.Point, to: PIXI.Point, volume: number): PIXI.Rectangle {
     let inv: any  = getInvFactor(from, to);
 
     return new PIXI.Rectangle(
-        (inv.x == 1 ? to.x : from.x) - 5,
-        (inv.y == 1 ? to.y : from.y) - 5,
-        (inv.x == 1 ? from.x - to.x : to.x - from.x) + 10,
-        (inv.y == 1 ? from.y - to.y : to.y - from.y) + 10
+        (inv.x == 1 ? to.x : from.x) - volume,
+        (inv.y == 1 ? to.y : from.y) - volume,
+        (inv.x == 1 ? from.x - to.x : to.x - from.x) + 2 * volume,
+        (inv.y == 1 ? from.y - to.y : to.y - from.y) + 2 * volume
     );
+}
+
+// referred from http://jsfiddle.net/justin_c_rounds/Gd2S2/light/
+// http://jsfiddle.net/m8cdu8z7/
+export function getLineIntersectPoint(line1P1: PIXI.Point, line1P2: PIXI.Point, line2P1: PIXI.Point, line2P2: PIXI.Point): any {
+
+    let result: any = {x: null, y: null, intersected: false};
+
+    let denom: number = ((line2P2.y - line2P1.y) * (line1P2.x - line1P1.x)) - ((line2P2.x - line2P1.x) * (line1P2.y - line1P1.y))
+
+    if (denom == 0) {
+        return result;
+    }
+
+    let a: number = line1P1.y - line2P1.y;
+    let b: number = line1P1.x - line2P1.x;
+
+    let numer1: number = ((line2P2.x - line2P1.x) * a) - ((line2P2.y - line2P1.y) * b);
+    let numer2: number = ((line1P2.x - line1P1.x) * a) - ((line1P2.y - line1P1.y) * b);
+
+    a = numer1 / denom;
+    b = numer2 / denom;
+
+    result.x = line1P1.x + (a * (line1P2.x - line1P1.x));
+    result.y = line1P1.y + (a * (line1P2.y - line1P1.y));
+
+    if ((a > 0 && a < 1) && (b > 0 && b < 1)) {
+        result.intersected = true;
+    }
+
+    return result;
+}
+
+export function getRectanglePoints(rect: PIXI.Rectangle, adj: number): PIXI.Point[] {
+    let d: PIXI.Point[] = [,,,]
+
+    d[0] = new PIXI.Point(rect.x, rect.y);
+    d[1] = new PIXI.Point(rect.x + rect.width + adj, rect.y);
+    d[2] = new PIXI.Point(rect.x + rect.width + adj, rect.y + rect.height + adj);
+    d[3] = new PIXI.Point(rect.x, rect.y + rect.height + adj);
+
+    return d;
 }
