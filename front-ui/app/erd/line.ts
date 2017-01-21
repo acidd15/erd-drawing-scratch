@@ -138,64 +138,66 @@ export class XLine extends XGraphics {
         let toBeY: number = 0;
 
         if (result1.intersected) {
-            toBeX = result1.x;
+            toBeX = this.calcCenterPos(rectPoints[0].x, rectPoints[1].x);
             toBeY = result1.y;
         }
 
         if (result2.intersected) {
             toBeX = result2.x;
-            toBeY = result2.y;
+            toBeY = this.calcCenterPos(rectPoints[1].y, rectPoints[2].y);
         }
 
         if (result3.intersected) {
-            toBeX = result3.x;
+            toBeX = this.calcCenterPos(rectPoints[2].x, rectPoints[3].x);
             toBeY = result3.y;
         }
 
         if (result4.intersected) {
             toBeX = result4.x;
-            toBeY = result4.y;
+            toBeY = this.calcCenterPos(rectPoints[3].y, rectPoints[0].y);
         }
 
         if (result5.intersected) {
-            toBeX = result5.x;
+            toBeX = this.calcCenterPos(rectPoints[0].x, rectPoints[1].x);
             toBeY = result5.y;
         }
 
         if (result6.intersected) {
             toBeX = result6.x;
-            toBeY = result6.y;
+            toBeY = this.calcCenterPos(rectPoints[1].y, rectPoints[2].y);
         }
 
         if (result7.intersected) {
-            toBeX = result7.x;
+            toBeX = this.calcCenterPos(rectPoints[2].x, rectPoints[3].x);
             toBeY = result7.y;
         }
 
         if (result8.intersected) {
             toBeX = result8.x;
-            toBeY = result8.y;
+            toBeY = this.calcCenterPos(rectPoints[3].y, rectPoints[0].y);
         }
 
         if (result9.intersected) {
-            toBeX = result9.x;
+            toBeX = this.calcCenterPos(rectPoints[0].x, rectPoints[1].x);
             toBeY = result9.y;
         }
 
         if (result10.intersected) {
             toBeX = result10.x;
-            toBeY = result10.y;
+            toBeY = this.calcCenterPos(rectPoints[1].y, rectPoints[2].y);
         }
 
         if (result11.intersected) {
-            toBeX = result11.x;
+            toBeX = this.calcCenterPos(rectPoints[2].x, rectPoints[3].x);
             toBeY = result11.y;
         }
 
         if (result12.intersected) {
             toBeX = result12.x;
-            toBeY = result12.y;
+            toBeY = this.calcCenterPos(rectPoints[3].y, rectPoints[0].y);
         }
+
+        console.log([toBeX, toBeY]);
 
         if (toBeX == 0 && toBeY == 0) {
             toBeX = this.linePoints[0].x + xDelta;
@@ -232,63 +234,63 @@ export class XLine extends XGraphics {
         let toBeY: number = 0;
 
         if (result1.intersected) {
-            toBeX = result1.x;
+            toBeX = this.calcCenterPos(rectPoints[0].x, rectPoints[1].x);
             toBeY = result1.y;
         }
 
         if (result2.intersected) {
             toBeX = result2.x;
-            toBeY = result2.y;
+            toBeY = this.calcCenterPos(rectPoints[1].y, rectPoints[2].y);
         }
 
         if (result3.intersected) {
-            toBeX = result3.x;
+            toBeX = this.calcCenterPos(rectPoints[2].x, rectPoints[3].x);
             toBeY = result3.y;
         }
 
         if (result4.intersected) {
             toBeX = result4.x;
-            toBeY = result4.y;
+            toBeY = this.calcCenterPos(rectPoints[3].y, rectPoints[0].y);
         }
 
         if (result5.intersected) {
-            toBeX = result5.x;
+            toBeX = this.calcCenterPos(rectPoints[0].x, rectPoints[1].x);
             toBeY = result5.y;
         }
 
         if (result6.intersected) {
             toBeX = result6.x;
-            toBeY = result6.y;
+            toBeY = this.calcCenterPos(rectPoints[1].y, rectPoints[2].y);
         }
 
         if (result7.intersected) {
-            toBeX = result7.x;
+            toBeX = this.calcCenterPos(rectPoints[2].x, rectPoints[3].x);
             toBeY = result7.y;
         }
 
         if (result8.intersected) {
             toBeX = result8.x;
-            toBeY = result8.y;
+            toBeY = this.calcCenterPos(rectPoints[3].y, rectPoints[0].y);
         }
 
         if (result9.intersected) {
-            toBeX = result9.x;
+            toBeX = this.calcCenterPos(rectPoints[0].x, rectPoints[1].x);
             toBeY = result9.y;
         }
 
         if (result10.intersected) {
             toBeX = result10.x;
-            toBeY = result10.y;
+            toBeY = this.calcCenterPos(rectPoints[1].y, rectPoints[2].y);
         }
 
         if (result11.intersected) {
-            toBeX = result11.x;
+            toBeX = this.calcCenterPos(rectPoints[2].x, rectPoints[3].x);
             toBeY = result11.y;
         }
 
         if (result12.intersected) {
             toBeX = result12.x;
-            toBeY = result12.y;
+            toBeY = this.calcCenterPos(rectPoints[3].y, rectPoints[0].y);
         }
 
         if (toBeX == 0 && toBeY == 0) {
@@ -392,12 +394,24 @@ export class XLine extends XGraphics {
             (this.lineDirections[0] == Direction.LEFT || this.lineDirections[0] == Direction.RIGHT)
             && (this.lineDirections[3] == Direction.LEFT || this.lineDirections[3] == Direction.RIGHT)
         ) {
-            let cx: number = this.calcCenterXPos(this.linePoints[0].x, this.linePoints[3].x);
-
+            let cx: number = this.calcCenterPos(this.linePoints[0].x, this.linePoints[3].x);
+            
             this.linePoints[1] = new PIXI.Point(cx, this.linePoints[0].y);
             this.linePoints[2] = new PIXI.Point(cx, this.linePoints[3].y);
+        } else if (
+            (this.lineDirections[0] == Direction.LEFT || this.lineDirections[0] == Direction.RIGHT)
+            && (this.lineDirections[3] == Direction.TOP || this.lineDirections[3] == Direction.BOTTOM)
+        ) {
+            this.linePoints[1] = new PIXI.Point(this.linePoints[3].x, this.linePoints[0].y);
+            this.linePoints[2] = new PIXI.Point(this.linePoints[3].x, this.linePoints[0].y);
+        } else if (
+            (this.lineDirections[0] == Direction.TOP || this.lineDirections[0] == Direction.BOTTOM)
+            && (this.lineDirections[3] == Direction.LEFT || this.lineDirections[3] == Direction.RIGHT)
+        ) {
+            this.linePoints[1] = new PIXI.Point(this.linePoints[0].x, this.linePoints[3].y);
+            this.linePoints[2] = new PIXI.Point(this.linePoints[0].x, this.linePoints[3].y);
         } else {
-            let cy: number = this.calcCenterXPos(this.linePoints[0].y, this.linePoints[3].y);
+            let cy: number = this.calcCenterPos(this.linePoints[0].y, this.linePoints[3].y);
 
             this.linePoints[1] = new PIXI.Point(this.linePoints[0].x, cy);
             this.linePoints[2] = new PIXI.Point(this.linePoints[3].x, cy);
@@ -429,12 +443,8 @@ export class XLine extends XGraphics {
         }
     }
 
-    private calcCenterXPos(fromX: number, toX: number): number {
+    private calcCenterPos(fromX: number, toX: number): number {
         return fromX + Math.ceil((toX - fromX)/2);
-    }
-
-    private calcCenterYPos(fromY: number, toY: number): number {
-        return fromY + Math.ceil((toY - fromY)/2);
     }
 
     private drawLine(): void {

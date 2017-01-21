@@ -292,7 +292,7 @@ export class XEntity extends XGraphics {
             let controlDirection: Direction = this.getCurrentControlDirection();
             for (let v of this.linePoints) {
                 v.updateLinePoints(this, controlDirection, xDelta, yDelta);
-                v.updateLineDirections();
+                //v.updateLineDirections();
                 v.updateCenterLinePoints();
                 v.redraw();
             }
