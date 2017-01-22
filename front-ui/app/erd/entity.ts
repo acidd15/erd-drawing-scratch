@@ -171,6 +171,8 @@ export class XEntity extends XGraphics {
         let cx = this.position.x + Math.ceil(this._width /2);
         let cy = this.position.y + Math.ceil(this._height /2);
 
+        console.log(["getCenterPos",cx, this.position.x, this._width])
+
         return new PIXI.Point(cx, cy);
     }
 
@@ -292,7 +294,6 @@ export class XEntity extends XGraphics {
             let controlDirection: Direction = this.getCurrentControlDirection();
             for (let v of this.linePoints) {
                 v.updateLinePoints(this, controlDirection, xDelta, yDelta);
-                //v.updateLineDirections();
                 v.updateCenterLinePoints();
                 v.redraw();
             }
@@ -448,8 +449,8 @@ export class XEntity extends XGraphics {
                 this.updateLinePoses(delta.x || delta.width, delta.y || delta.height);
             } else {
                 this.moveEntity(delta.x, delta.y);
-                stage.moveSelectedEntityGroup(delta.x, delta.y);
                 this.updateLinePoses(delta.x, delta.y);
+                stage.moveSelectedEntityGroup(delta.x, delta.y);
             }
 
             this.redraw();

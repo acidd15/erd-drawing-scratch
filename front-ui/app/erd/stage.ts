@@ -80,7 +80,7 @@ export class XStage extends XContainer {
     }
 
     private addUnnamedEntity(pos: PIXI.Point): void {
-        let entity: XEntity = new XEntity(pos.x, pos.y, 200, 300, 0xcccccc);
+        let entity: XEntity = new XEntity(pos.x, pos.y, 100, 100, 0xcccccc);
         entity.setName("Unnamed Entity");
         this.addChild(entity);
     }
