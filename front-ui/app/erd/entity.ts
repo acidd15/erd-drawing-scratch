@@ -7,7 +7,7 @@ import {XLine} from "./line";
 import {XGraphics} from "./graphics";
 import {State, DragState, Direction} from "./types";
 
-import {getXYDelta} from "./library";
+import {getXYDelta, calcCenterPosByWidth} from "./library";
 
 export class XEntity extends XGraphics {
     private _width: number;
@@ -168,10 +168,8 @@ export class XEntity extends XGraphics {
     }
 
     public getCenterPos(): PIXI.Point {
-        let cx = this.position.x + Math.ceil(this._width /2);
-        let cy = this.position.y + Math.ceil(this._height /2);
-
-        console.log(["getCenterPos",cx, this.position.x, this._width])
+        let cx = calcCenterPosByWidth(this.position.x, this._width);
+        let cy = calcCenterPosByWidth(this.position.y, this._height);
 
         return new PIXI.Point(cx, cy);
     }
@@ -257,19 +255,13 @@ export class XEntity extends XGraphics {
 
     private getMinMaxLinePosition() {
         let p: any = {
-            x : {
-                min: -1,
-                max: -1
-            },
-            y : {
-                min: -1,
-                max: -1
-            }
+            x : { min: -1, max: -1 },
+            y : { min: -1, max: -1 }
         };
 
         for (let v of this.linePoints) {
-            let pos: PIXI.Point = v.getPoint(this);
-            let dir: Direction = v.getDirection(this);
+            let pos: PIXI.Point = v.getJoinPoint(this);
+            let dir: Direction = v.getJoinDirection(this);
             if (dir == Direction.TOP || dir == Direction.BOTTOM) {
                 if (p.x.min > pos.x || p.x.min == -1) p.x.min = pos.x;
                 if (p.x.max < pos.x || p.x.max == -1) p.x.max = pos.x;
@@ -293,8 +285,8 @@ export class XEntity extends XGraphics {
         if (this.linePoints) {
             let controlDirection: Direction = this.getCurrentControlDirection();
             for (let v of this.linePoints) {
-                v.updateLinePoints(this, controlDirection, xDelta, yDelta);
-                v.updateCenterLinePoints();
+                v.updateLineJoint(this, controlDirection, xDelta, yDelta);
+                v.updateMiddleLinePoints();
                 v.redraw();
             }
         }

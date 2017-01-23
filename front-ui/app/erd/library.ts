@@ -77,7 +77,7 @@ export function getLineIntersectPoint(line1P1: PIXI.Point, line1P2: PIXI.Point, 
 
     let result: any = {x: null, y: null, intersected: false};
 
-    let denom: number = ((line2P2.y - line2P1.y) * (line1P2.x - line1P1.x)) - ((line2P2.x - line2P1.x) * (line1P2.y - line1P1.y))
+    let denom: number = ((line2P2.y - line2P1.y) * (line1P2.x - line1P1.x)) - ((line2P2.x - line2P1.x) * (line1P2.y - line1P1.y));
 
     if (denom == 0) {
         return result;
@@ -111,4 +111,12 @@ export function getRectanglePoints(rect: PIXI.Rectangle, adj: number): PIXI.Poin
     d[3] = new PIXI.Point(rect.x, rect.y + rect.height + adj);
 
     return d;
+}
+
+export function calcCenterPos(from: number, to: number): number {
+    return calcCenterPosByWidth(from, to - from);
+}
+
+export function calcCenterPosByWidth(from: number, width: number): number {
+    return from + Math.ceil(width / 2);
 }
