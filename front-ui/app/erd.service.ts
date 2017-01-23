@@ -20,7 +20,7 @@ export class ErdService {
 
         this.animate();
 
-        this.setEventHandler();
+        //this.setEventHandler();
     }
 
     private animate(): void {
@@ -49,9 +49,7 @@ export class ErdService {
         }
     }
 
-    private setEventHandler(): void {
-        this.stage.setEventHandler(EventType.EVT_EDIT_ENTITY, (evt: any) => {
-            console.log(evt);
-        });
+    public setEditEntityEventHandler(func: any): void {
+        this.stage.setEventHandler(EventType.EVT_EDIT_ENTITY, func);
     }
 }

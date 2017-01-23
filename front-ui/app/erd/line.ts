@@ -39,7 +39,7 @@ export class XLine extends XGraphics {
 
         this.lineBoundarySize = 20;
 
-        this.useDebug = true;
+        this.useDebug = false;
 
         this.from.addLinePoint(this);
         this.to.addLinePoint(this);

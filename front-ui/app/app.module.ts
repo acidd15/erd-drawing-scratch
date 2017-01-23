@@ -4,18 +4,20 @@ import {BrowserModule} from '@angular/platform-browser';
 import {FormsModule} from '@angular/forms';
 import {AppComponent} from './app.component';
 import {XErdStageComponent} from './erd-stage.component';
+import {EditEntityComponent} from "./dialog/edit-entity.component";
 import {MenuComponent} from "./menu.component";
 import {ErdService} from "./erd.service";
-import {ButtonsModule} from 'ng2-bootstrap';
+import {ButtonsModule, ModalModule} from 'ng2-bootstrap';
 
 @NgModule({
     imports: [
         BrowserModule,
         FormsModule,
-        ButtonsModule
+        ButtonsModule,
+        ModalModule.forRoot()
     ],
     declarations: [
-        AppComponent, XErdStageComponent, MenuComponent
+        AppComponent, XErdStageComponent, MenuComponent, EditEntityComponent
     ],
     providers: [
         ErdService

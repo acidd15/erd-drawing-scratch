@@ -1,9 +1,11 @@
 
 /// <reference path="../module/pixi-typescript/pixi.js.d.ts" />
 
-import {Component, ElementRef} from "@angular/core";
+import {Component, ElementRef, Input} from "@angular/core";
 import DisplayObject = PIXI.DisplayObject;
 import {ErdService} from "./erd.service";
+import {EditEntityComponent} from "./dialog/edit-entity.component";
+import {XErdStageComponent} from "./erd-stage.component";
 
 require('module/pixijs-4.3.0/pixi.js');
 
@@ -15,9 +17,11 @@ require('module/pixijs-4.3.0/pixi.js');
     }
 )
 export class MenuComponent {
+    @Input() public dlgEditEntity: EditEntityComponent;
+    @Input() public stage: XErdStageComponent;
 
     constructor(private erdService: ErdService) {
-
+        console.log(this.dlgEditEntity);
     }
 
     public setAddEntityState(): void {
