@@ -62,6 +62,16 @@ export class XEntity extends XGraphics {
     //@Override
     public redraw(): void {
         this.clear();
+
+        this.lineStyle(1, 0xff00ff, 1);
+        let d: any = this.toLocal(new PIXI.Point(this.x, this.y));
+        this.drawRect(d.x, d.y, this.width, this.height);
+
+        this.lineStyle(1, 0xffff00, 1);
+        this.drawRect(this.bodyContainer.x, this.bodyContainer.y, this.bodyContainer.width, this.bodyContainer.height);
+
+        this.lineStyle(1, 0x00, 1);
+
         this.drawBody();
         this.drawResizeHandle();
     }
@@ -87,6 +97,7 @@ export class XEntity extends XGraphics {
         this.addChild(this._name);
     }
 
+    /*
     public addItem(value: string): void {
         var t = new PIXI.Text(
             value,
@@ -122,6 +133,32 @@ export class XEntity extends XGraphics {
         this.redraw();
 
         //this.updateLinePoses(this._width - prevWidth, this._height - prevHeight);
+    }
+    */
+
+    public addItem(value: string): void {
+        var t = new PIXI.Text(
+            value,
+            {
+                fontFamily: 'Arial',
+                fontSize: '11px',
+                fill: 'green',
+                align: 'left'
+            }
+        );
+
+        t.position.set(5, this.itemCount * 15 + 5);
+        // to prevent hit test
+        t.containsPoint = () => false;
+
+        this._height += 15;
+        this.itemCount++;
+
+        this.bodyContainer.addChild(t);
+
+        this._width = this.bodyContainer.width;
+
+        this.redraw();
     }
 
     public removeItems() {
