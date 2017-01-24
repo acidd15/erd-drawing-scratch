@@ -15,6 +15,8 @@ export class XEntity extends XGraphics {
     private color: number;
     private minSize: any;
     private itemCount: number;
+    private itemWidthMax: number;
+    private itemHeight: number;
     private bodyContainer: PIXI.Graphics;
     private linePoints: XLine[];
     private _name: PIXI.Text;
@@ -37,6 +39,8 @@ export class XEntity extends XGraphics {
         this.interactive = true;
 
         this.itemCount = 0;
+        this.itemWidthMax = 0;
+        this.itemHeight = 15;
 
         this.bodyContainer = new PIXI.Graphics();
         this.addChild(this.bodyContainer);
@@ -83,8 +87,7 @@ export class XEntity extends XGraphics {
         this.addChild(this._name);
     }
 
-    /*
-    private addItem(value: string): void {
+    public addItem(value: string): void {
         var t = new PIXI.Text(
             value,
             {
@@ -95,17 +98,54 @@ export class XEntity extends XGraphics {
             }
         );
 
-        t.position.set(5, this.itemCount * 15 + 5);
+        t.position.set(5, this.itemCount * this.itemHeight);
         // to prevent hit test
         t.containsPoint = () => false;
 
-        this._height += 15;
         this.itemCount++;
+
+        if (this.itemWidthMax < t.width) {
+            this.itemWidthMax = t.width;
+        }
+
+        let prevWidth: number = this._width;
+        if (this.itemWidthMax > this.bodyContainer.width) {
+            this._width = this.itemWidthMax + (5 * 2);
+        }
+
+        let prevHeight: number = this._height;
+        if (this.itemCount * this.itemHeight + 5 > this._height) {
+            this._height = this.itemCount * this.itemHeight;
+        }
 
         this.bodyContainer.addChild(t);
         this.redraw();
+
+        //this.updateLinePoses(this._width - prevWidth, this._height - prevHeight);
     }
-    */
+
+    public removeItems() {
+        let prevWidth: number = this._width;
+        let prevHeight: number = this._height;
+
+        this.bodyContainer.removeChildren();
+        this._width = this.minSize.width;
+        this._height = this.minSize.height;
+        this.itemCount = 0;
+        this.itemWidthMax = this._width;
+
+        this.redraw();
+
+        this.updateLinePoses(this._width - prevWidth, this._height - prevHeight);
+    }
+
+    public getItems(): string[] {
+        let data: string[] = [];
+        for (let v of this.bodyContainer.children) {
+            data.push((<PIXI.Text>v).text)
+        }
+        return data;
+    }
 
     public addLinePoint(obj: XLine): void {
         this.linePoints.push(obj);

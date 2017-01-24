@@ -2,13 +2,50 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title pull-left">Large modal</h4>
+                <h4 class="modal-title pull-left">Edit Entity</h4>
                 <button type="button" class="close pull-right" (click)="modal.hide()" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                ...
+                <div class="btn-group-top">
+                    <button (click)="appendItem()" class="btn btn-default">Add</button>
+                </div>
+                <div class="area">
+                    <table class="table">
+                        <thead>
+                            <th>No</th>
+                            <th>PK</th>
+                            <th>NULLABLE</th>
+                            <th>Physical Name</th>
+                            <th>Logical Name</th>
+                            <th></th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of models; let i = index">
+                                <td>
+                                    <span>{{i + 1}}</span>
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td>
+                                    <input type="text" class="form-control input-sm"
+                                           [value]="item" (change)="updateItem(i, $event.target.value)"/>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control input-sm"/>
+                                </td>
+                                <td>
+                                    <button (click)="removeItem(i)" class="btn btn-default">Remove</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="btn-group-bottom">
+                    <button (click)="modal.hide()" class="btn btn-default">Close</button>
+                    <button (click)="save()" class="btn btn-default">Save</button>
+                </div>
             </div>
         </div>
     </div>

@@ -1,0 +1,24 @@
+.table th.no {
+    width: 50px;
+}
+
+.table th.name {
+    width: 200px;
+}
+
+.table th.function {
+    width: 200px;
+}
+
+div.area {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    height: 300px;
+    overflow-y: auto;
+}
+
+div.btn-group-top, div.btn-group-bottom {
+    text-align: right;
+}
+

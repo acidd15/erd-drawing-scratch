@@ -1,23 +1,32 @@
 
-import {Component, Input} from "@angular/core";
+import {Component, Input, ViewChild} from "@angular/core";
 import {OnChange} from "ng2-bootstrap";
+import {ErdService} from "./erd.service";
+import {EditEntityComponent} from "./dialog/edit-entity.component";
 
 @Component(
     {
         selector: 'simple-erd',
         template: `
             <div>
-                <control-menu [dlgEditEntity]="dlgEditEntity" [stage]="stage"></control-menu>
+                <control-menu></control-menu>
             </div>
             <div>
-                <simple-erd-stage #stage [dlgEditEntity]="dlgEditEntity"></simple-erd-stage>
+                <simple-erd-stage></simple-erd-stage>
             </div>
-            <dlg-edit-entity #dlgEditEntity></dlg-edit-entity>
+            <div>
+                <dlg-edit-entity #dlgEditEntity></dlg-edit-entity>
+            </div>
         `
     }
 )
 export class AppComponent {
-    constructor() {
+    @ViewChild("dlgEditEntity") private dlgEditEntity: EditEntityComponent;
 
+    constructor(private erdService: ErdService) {
+        let _self: AppComponent = this;
+        this.erdService.editEntityObservable.subscribe((data: any) => {
+            _self.dlgEditEntity.show(data[0], data[1]);
+        })
     }
 }

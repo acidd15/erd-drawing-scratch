@@ -17,11 +17,7 @@ require('module/pixijs-4.3.0/pixi.js');
     }
 )
 export class MenuComponent {
-    @Input() public dlgEditEntity: EditEntityComponent;
-    @Input() public stage: XErdStageComponent;
-
     constructor(private erdService: ErdService) {
-        console.log(this.dlgEditEntity);
     }
 
     public setAddEntityState(): void {

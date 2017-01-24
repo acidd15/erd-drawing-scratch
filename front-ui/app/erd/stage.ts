@@ -82,7 +82,25 @@ export class XStage extends XContainer {
     private addUnnamedEntity(pos: PIXI.Point): void {
         let entity: XEntity = new XEntity(pos.x, pos.y, 100, 100, 0xcccccc);
         entity.setName("Unnamed Entity");
+        entity.addItem("Test");
+        entity.addItem("가나다라마바사아자차카");
+        entity.addItem("가나다라마바사아자차카");
+        entity.addItem("가나다라마바사아자차카");
+        entity.addItem("가나다라마바사아자차카");
+        entity.addItem("가나다라마바사아자차카");
+        entity.addItem("가나다라마바사아자차카");
+        entity.addItem("가나다라마바사아자차카");
+        entity.addItem("가나다라마바사아");
+        entity.addItem("가나다라마바사아");
+
         this.addChild(entity);
+    }
+
+    public saveEntity(target: XEntity, data: string[]): void {
+        target.removeItems();
+        for (let v of data) {
+            target.addItem(v);
+        }
     }
 
     public addRelation(from: XEntity, to: XEntity): void {
@@ -104,9 +122,11 @@ export class XStage extends XContainer {
                 line.sendToBack();
             }
         }
+
+        console.log(from.getLinePoints());
     }
 
-    public setEventHandler(evtType: EventType, handler: (evt: PIXI.interaction.InteractionEvent) => void): void {
+    public setEventHandler(evtType: EventType, handler: (evt: EventType) => void): void {
         this.eventMap[evtType] = handler;
     }
 

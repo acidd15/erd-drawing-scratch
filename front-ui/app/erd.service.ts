@@ -2,6 +2,8 @@
 import {Injectable, ElementRef} from "@angular/core";
 import {XStage} from "./erd/stage";
 import {State, EventType} from "./erd/types";
+import {Subject} from "rxjs/Subject";
+import {XEntity} from "./erd/entity";
 
 @Injectable()
 export class ErdService {
@@ -9,7 +11,6 @@ export class ErdService {
     private renderer: PIXI.CanvasRenderer;
 
     constructor() {
-
     }
 
     public createStage(ele: ElementRef): void {
@@ -20,7 +21,7 @@ export class ErdService {
 
         this.animate();
 
-        //this.setEventHandler();
+        this.setEditEntityEventHandler();
     }
 
     private animate(): void {
@@ -49,7 +50,20 @@ export class ErdService {
         }
     }
 
-    public setEditEntityEventHandler(func: any): void {
-        this.stage.setEventHandler(EventType.EVT_EDIT_ENTITY, func);
+    public saveEntity(target: any, data: string[]): void {
+        this.stage.saveEntity(target, data);
+    }
+
+    private editEntitySubject = new Subject<any>();
+    public editEntityObservable = this.editEntitySubject.asObservable();
+
+    private editEntity(target: any, data: any): void {
+        this.editEntitySubject.next([target, data]);
+    }
+
+    public setEditEntityEventHandler(): void {
+        let _self: ErdService = this;
+        this.stage.setEventHandler(EventType.EVT_EDIT_ENTITY,
+            (evt: any) => _self.editEntity(evt.target, (<XEntity>evt.target).getItems()));
     }
 }
