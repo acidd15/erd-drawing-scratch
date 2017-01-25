@@ -10,8 +10,8 @@ import {State, DragState, Direction} from "./types";
 import {getXYDelta, calcCenterPosByWidth} from "./library";
 
 export class XEntity extends XGraphics {
-    private _width: number;
-    private _height: number;
+    private bodyContainerWidth: number;
+    private bodyContainerHeight: number;
     private color: number;
     private minSize: any;
     private itemCount: number;
@@ -24,14 +24,14 @@ export class XEntity extends XGraphics {
     private isRightTopSelected: boolean;
     private isLeftBottomSelected: boolean;
     private isRightBottomSelected: boolean;
+    private resizehandleSize: number = 10;
 
     constructor(x: number, y: number, width: number, height: number, color: number) {
         super();
 
-        this._width = width;
-        this._height = height;
-
         this.position.set(x, y);
+        this.bodyContainerWidth = 300;
+        this.bodyContainerHeight = 300;
 
         this.color = color || 0xFF0000;
         this.minSize = {width: 50, height: 50};
@@ -43,6 +43,7 @@ export class XEntity extends XGraphics {
         this.itemHeight = 15;
 
         this.bodyContainer = new PIXI.Graphics();
+        this.bodyContainer.position.set(0, 15);
         this.addChild(this.bodyContainer);
 
         this.linePoints = [];
@@ -56,21 +57,25 @@ export class XEntity extends XGraphics {
     }
 
     public getWidth(): number {
-        return this._width;
+        return this.width;
     }
 
     //@Override
     public redraw(): void {
         this.clear();
 
+        /*
         this.lineStyle(1, 0xff00ff, 1);
         let d: any = this.toLocal(new PIXI.Point(this.x, this.y));
         this.drawRect(d.x, d.y, this.width, this.height);
+        */
 
         this.lineStyle(1, 0xffff00, 1);
-        this.drawRect(this.bodyContainer.x, this.bodyContainer.y, this.bodyContainer.width, this.bodyContainer.height);
+        this.drawRect(this.bodyContainer.x, this.bodyContainer.y, this.bodyContainerWidth, this.bodyContainerHeight);
 
-        this.lineStyle(1, 0x00, 1);
+
+        console.log(this.scale);
+        console.log(this.width);
 
         this.drawBody();
         this.drawResizeHandle();
@@ -92,7 +97,7 @@ export class XEntity extends XGraphics {
             }
         );
 
-        this._name.position.set(0, -15);
+        this._name.position.set(0, 0);
 
         this.addChild(this._name);
     }
@@ -151,29 +156,41 @@ export class XEntity extends XGraphics {
         // to prevent hit test
         t.containsPoint = () => false;
 
-        this._height += 15;
+        //this.height += 15;
         this.itemCount++;
 
         this.bodyContainer.addChild(t);
 
-        this._width = this.bodyContainer.width;
+        //this._width = this.bodyContainer.width;
+
+        this.updateBodyContainerWidthHeight();
 
         this.redraw();
     }
 
+    private updateBodyContainerWidthHeight() {
+        if (this.bodyContainer.width > this.bodyContainerWidth) {
+            this.bodyContainerWidth = this.bodyContainer.width;
+        }
+
+        if (this.bodyContainer.height > this.bodyContainerHeight) {
+            this.bodyContainerHeight = this.bodyContainer.height;
+        }
+    }
+
     public removeItems() {
-        let prevWidth: number = this._width;
-        let prevHeight: number = this._height;
+        let prevWidth: number = this.width;
+        let prevHeight: number = this.height;
 
         this.bodyContainer.removeChildren();
-        this._width = this.minSize.width;
-        this._height = this.minSize.height;
+        this.width = this.minSize.width;
+        this.height = this.minSize.height;
         this.itemCount = 0;
-        this.itemWidthMax = this._width;
+        this.itemWidthMax = this.width;
 
         this.redraw();
 
-        this.updateLinePoses(this._width - prevWidth, this._height - prevHeight);
+        this.updateLinePoses(this.width - prevWidth, this.height - prevHeight);
     }
 
     public getItems(): string[] {
@@ -194,7 +211,7 @@ export class XEntity extends XGraphics {
 
     public getBodyRectangle(): PIXI.Rectangle {
         let gPos: PIXI.Point = this.toGlobal(this.bodyContainer.position);
-        return new PIXI.Rectangle(gPos.x, gPos.y, this.bodyContainer.width, this.bodyContainer.height);
+        return new PIXI.Rectangle(gPos.x, gPos.y, this.bodyContainerWidth, this.bodyContainerHeight);
     }
 
     private drawBody(): void {
@@ -202,10 +219,10 @@ export class XEntity extends XGraphics {
             this.bodyContainer.clear();
             this.bodyContainer.beginFill(this.color, 1);
             this.bodyContainer.lineStyle(1, 0x00, 1);
-            this.bodyContainer.drawRect(0, 0, this._width, this._height);
+            this.bodyContainer.drawRect(0, 0, this.bodyContainerWidth, this.bodyContainerHeight);
             this.bodyContainer.endFill();
 
-            this.clipBodyContainer();
+            //this.clipBodyContainer();
         }
     }
 
@@ -220,7 +237,7 @@ export class XEntity extends XGraphics {
 
         clip.clear();
         clip.beginFill(this.color, 1);
-        clip.drawRect(p.x -1, p.y, this._width +1, this._height +1);
+        clip.drawRect(p.x -1, p.y, this.width +1, this.height +1);
         clip.endFill();
 
         this.bodyContainer.mask = clip;
@@ -245,8 +262,8 @@ export class XEntity extends XGraphics {
     }
 
     public getCenterPos(): PIXI.Point {
-        let cx = calcCenterPosByWidth(this.position.x, this._width);
-        let cy = calcCenterPosByWidth(this.position.y, this._height);
+        let cx = calcCenterPosByWidth(this.position.x, this.width);
+        let cy = calcCenterPosByWidth(this.position.y, this.height);
 
         return new PIXI.Point(cx, cy);
     }
@@ -256,15 +273,15 @@ export class XEntity extends XGraphics {
     }
 
     private getRightTopHandleRect(): PIXI.Rectangle {
-        return new PIXI.Rectangle(this._width, -10, 10, 10);
+        return new PIXI.Rectangle(this.width, -10, 10, 10);
     }
 
     private getLeftBottomHandleRect(): PIXI.Rectangle {
-        return new PIXI.Rectangle(-10, this._height, 10, 10);
+        return new PIXI.Rectangle(-10, this.height, 10, 10);
     }
 
     private getRightBottomHandleRect(): PIXI.Rectangle {
-        return new PIXI.Rectangle(this._width, this._height, 10, 10);
+        return new PIXI.Rectangle(this.width, this.height, 10, 10);
     }
 
     /*
@@ -298,17 +315,17 @@ export class XEntity extends XGraphics {
 
     private isPosInRightTop(pos: PIXI.Point): boolean {
         let rt: PIXI.Rectangle = this.getRightTopHandleRect();
-        return this.isPosInRect(rt, pos);
+        return this.isPosInRect(rt, new PIXI.Point(pos.x + 20, pos.y));
     }
 
     private isPosInLeftBottom(pos: PIXI.Point): boolean {
         let lb: PIXI.Rectangle = this.getLeftBottomHandleRect();
-        return this.isPosInRect(lb, pos);
+        return this.isPosInRect(lb, new PIXI.Point(pos.x, pos.y + 20));
     }
 
     private isPosInRightBottom(pos: PIXI.Point): boolean {
         let rb: PIXI.Rectangle = this.getRightBottomHandleRect();
-        return this.isPosInRect(rb, pos);
+        return this.isPosInRect(rb, new PIXI.Point(pos.x + 20, pos.y + 20));
     }
 
     public moveEntity(xDelta: number, yDelta: number): void {
@@ -353,9 +370,12 @@ export class XEntity extends XGraphics {
 
     private resizeEntity(xDelta: number, yDelta: number, wDelta: number, hDelta: number): void {
         this.position.x += xDelta;
-        this._width += wDelta;
         this.position.y += yDelta;
-        this._height += hDelta;
+
+        this.bodyContainerWidth += wDelta;
+        this.bodyContainerHeight += hDelta;
+
+        this.updateBodyContainerWidthHeight();
     }
 
     public updateLinePoses(xDelta: number, yDelta: number): void {
@@ -445,12 +465,12 @@ export class XEntity extends XGraphics {
             delta.y = 0;
         }
 
-        if (!(this.minSize.width <= this._width + delta.width)) {
+        if (!(this.minSize.width <= this.width + delta.width)) {
             delta.x = 0;
             delta.width = 0;
         }
 
-        if (!(this.minSize.height <= this._height + delta.height)) {
+        if (!(this.minSize.height <= this.height + delta.height)) {
             delta.y = 0;
             delta.height = 0;
         }
