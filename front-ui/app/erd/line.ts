@@ -39,7 +39,7 @@ export class XLine extends XGraphics {
 
         this.lineBoundarySize = 20;
 
-        this.useDebug = false;
+        this.useDebug = true;
 
         this.from.addLinePoint(this);
         this.to.addLinePoint(this);
@@ -87,8 +87,10 @@ export class XLine extends XGraphics {
         this.drawLine();
     }
 
-    private initLinePoints(): void {
+    public initLinePoints(): void {
+
         let linePos: any = this.getEntityCenterLinePosEach();
+
         this.linePoints[0] = new PIXI.Point(linePos.fromPos.x, linePos.fromPos.y);
         this.linePoints[1] = new PIXI.Point(linePos.fromPos.x, linePos.fromPos.y);
         this.linePoints[2] = new PIXI.Point(linePos.toPos.x, linePos.toPos.y);
@@ -97,6 +99,7 @@ export class XLine extends XGraphics {
         this.updateFromLineJoint(this.from, 0, 0);
         this.updateToLineJoint(this.to, 0, 0);
         this.updateMiddleLinePoints();
+
         this.redraw();
     }
 
@@ -107,6 +110,8 @@ export class XLine extends XGraphics {
         let rectPoints: PIXI.Point[] = getRectanglePoints(rect, -1);
 
         let toBeJoinPoint: PIXI.Point = new PIXI.Point(this.linePoints[0].x + xDelta, this.linePoints[0].y + yDelta);
+
+        console.log(["toBeJoinPoint", toBeJoinPoint, xDelta, yDelta]);
 
         let result: any[] = [];
         for (let i: number = 0; 3 > i; ++i) {
@@ -401,10 +406,11 @@ export class XLine extends XGraphics {
         let fromCenter: PIXI.Point = this.from.getCenterPos();
         let toCenter: PIXI.Point = this.to.getCenterPos();
 
-        return {fromPos: fromCenter, toPos: toCenter};
+        return {fromPos: this.toLocal(fromCenter), toPos: this.toLocal(toCenter)};
     }
 
     private drawLine(): void {
+        console.log(this.parent);
         this.clear();
 
         this.lineStyle(1, 0x00, 1);
@@ -438,6 +444,9 @@ export class XLine extends XGraphics {
             this.beginFill(0xffff00, 1);
             this.drawRect(this.linePoints[3].x - 5, this.linePoints[3].y - 5, 10, 10);
             this.endFill();
+
+            this.lineStyle(1, 0xff00ff, 1);
+            this.drawRect(this.x, this.y, this.width, this.height);
         }
     }
 

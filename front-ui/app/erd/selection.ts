@@ -24,10 +24,10 @@ export class XSelection extends XGraphics {
         this.visible = false;
     }
 
-    public update(x: number, y: number): void {
+    public update(w: number, h: number): void {
         this.clear();
         this.lineStyle(1, 0x00, 1);
-        this.drawRect(0, 0, x, y);
+        this.drawRect(0, 0, w, h);
     }
 
 }

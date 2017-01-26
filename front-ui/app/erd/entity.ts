@@ -1,5 +1,6 @@
 /// <reference path="../../module/pixi-typescript/pixi.js.d.ts" />
 
+import {XResizeGuide} from "./guide";
 require("module/pixijs-4.3.0/pixi.js");
 
 import {XStage} from "./stage";
@@ -18,35 +19,43 @@ export class XEntity extends XGraphics {
     private itemWidthMax: number;
     private itemHeight: number;
     private bodyContainer: PIXI.Graphics;
-    private linePoints: XLine[];
-    private _name: PIXI.Text;
-    private isLeftTopSelected: boolean;
-    private isRightTopSelected: boolean;
-    private isLeftBottomSelected: boolean;
-    private isRightBottomSelected: boolean;
-    private resizehandleSize: number = 10;
+    private jointLines: XLine[];
+    private entityName: PIXI.Text;
+    private selectedResizeHandle: Direction;
+    private resizeHandleSize: number;
+    private resizeGuide: XResizeGuide;
+    private bodyContainerYPosAdj: number;
 
     constructor(x: number, y: number, width: number, height: number, color: number) {
         super();
 
-        this.position.set(x, y);
-        this.bodyContainerWidth = 300;
-        this.bodyContainerHeight = 300;
+        //this.position.set(x, y);
+        console.log("entity", x, y);
 
         this.color = color || 0xFF0000;
         this.minSize = {width: 50, height: 50};
 
+        this.bodyContainerWidth = this.minSize.width;
+        this.bodyContainerHeight = this.minSize.height;
+
         this.interactive = true;
+
+        this.resizeHandleSize = 10;
 
         this.itemCount = 0;
         this.itemWidthMax = 0;
         this.itemHeight = 15;
 
+        this.resizeGuide = undefined;
+
+        this.selectedResizeHandle = Direction.NONE;
+        this.bodyContainerYPosAdj = 15;
+
         this.bodyContainer = new PIXI.Graphics();
-        this.bodyContainer.position.set(0, 15);
+        this.bodyContainer.position.set(0, this.bodyContainerYPosAdj);
         this.addChild(this.bodyContainer);
 
-        this.linePoints = [];
+        this.jointLines = [];
 
         this.on("mousedown", this.onMouseDown);
         this.on("mouseup", this.onMouseUp);
@@ -64,30 +73,24 @@ export class XEntity extends XGraphics {
     public redraw(): void {
         this.clear();
 
-        /*
         this.lineStyle(1, 0xff00ff, 1);
         let d: any = this.toLocal(new PIXI.Point(this.x, this.y));
         this.drawRect(d.x, d.y, this.width, this.height);
-        */
 
         this.lineStyle(1, 0xffff00, 1);
         this.drawRect(this.bodyContainer.x, this.bodyContainer.y, this.bodyContainerWidth, this.bodyContainerHeight);
-
-
-        console.log(this.scale);
-        console.log(this.width);
 
         this.drawBody();
         this.drawResizeHandle();
     }
 
     public setName(name: string): void {
-        if (typeof this._name != "undefined") {
-            this._name.text = name;
+        if (typeof this.entityName != "undefined") {
+            this.entityName.text = name;
             return;
         }
 
-        this._name = new PIXI.Text(
+        this.entityName = new PIXI.Text(
             name,
             <PIXI.ITextStyleStyle>{
                 fontFamily: "Arial",
@@ -97,9 +100,9 @@ export class XEntity extends XGraphics {
             }
         );
 
-        this._name.position.set(0, 0);
+        this.entityName.position.set(0, 0);
 
-        this.addChild(this._name);
+        this.addChild(this.entityName);
     }
 
     /*
@@ -152,16 +155,13 @@ export class XEntity extends XGraphics {
             }
         );
 
-        t.position.set(5, this.itemCount * 15 + 5);
+        t.position.set(5, this.itemCount * this.itemHeight);
         // to prevent hit test
         t.containsPoint = () => false;
 
-        //this.height += 15;
         this.itemCount++;
 
         this.bodyContainer.addChild(t);
-
-        //this._width = this.bodyContainer.width;
 
         this.updateBodyContainerWidthHeight();
 
@@ -202,11 +202,11 @@ export class XEntity extends XGraphics {
     }
 
     public addLinePoint(obj: XLine): void {
-        this.linePoints.push(obj);
+        this.jointLines.push(obj);
     }
 
     public getLinePoints(): XLine[] {
-        return this.linePoints;
+        return this.jointLines;
     }
 
     public getBodyRectangle(): PIXI.Rectangle {
@@ -217,7 +217,7 @@ export class XEntity extends XGraphics {
     private drawBody(): void {
         if (this.bodyContainer) {
             this.bodyContainer.clear();
-            this.bodyContainer.beginFill(this.color, 1);
+            this.bodyContainer.beginFill(this.color, 0.2);
             this.bodyContainer.lineStyle(1, 0x00, 1);
             this.bodyContainer.drawRect(0, 0, this.bodyContainerWidth, this.bodyContainerHeight);
             this.bodyContainer.endFill();
@@ -334,17 +334,7 @@ export class XEntity extends XGraphics {
     }
 
     private getCurrentControlDirection(): Direction {
-        if (this.isLeftTopSelected) {
-            return Direction.LEFT_TOP;
-        } else if (this.isRightTopSelected) {
-            return Direction.RIGHT_TOP;
-        } else if (this.isLeftBottomSelected) {
-            return Direction.LEFT_BOTTOM;
-        } else if (this.isRightBottomSelected) {
-            return Direction.RIGHT_BOTTOM;
-        } else {
-            return Direction.NONE;
-        }
+        return this.selectedResizeHandle;
     }
 
     private getMinMaxLinePosition() {
@@ -353,7 +343,7 @@ export class XEntity extends XGraphics {
             y : { min: -1, max: -1 }
         };
 
-        for (let v of this.linePoints) {
+        for (let v of this.jointLines) {
             let pos: PIXI.Point = v.getJoinPoint(this);
             let dir: Direction = v.getJoinDirection(this);
             if (dir == Direction.TOP || dir == Direction.BOTTOM) {
@@ -368,20 +358,26 @@ export class XEntity extends XGraphics {
         return p;
     }
 
-    private resizeEntity(xDelta: number, yDelta: number, wDelta: number, hDelta: number): void {
+    public resizeEntity(xDelta: number, yDelta: number, wDelta: number, hDelta: number): void {
         this.position.x += xDelta;
         this.position.y += yDelta;
 
         this.bodyContainerWidth += wDelta;
         this.bodyContainerHeight += hDelta;
 
+        this.visible = false;
+        this.redraw();
+
         this.updateBodyContainerWidthHeight();
+
+        this.visible = true;
+        this.redraw();
     }
 
     public updateLinePoses(xDelta: number, yDelta: number): void {
-        if (this.linePoints) {
+        if (this.jointLines) {
             let controlDirection: Direction = this.getCurrentControlDirection();
-            for (let v of this.linePoints) {
+            for (let v of this.jointLines) {
                 v.updateLineJoint(this, controlDirection, xDelta, yDelta);
                 v.updateMiddleLinePoints();
                 v.redraw();
@@ -391,28 +387,44 @@ export class XEntity extends XGraphics {
 
     private setResizeHandleSelection(lPos: PIXI.Point): void {
         if (this.isPosInLeftTop(lPos)) {
-            this.isLeftTopSelected = true;
+            this.selectedResizeHandle = Direction.LEFT_TOP;
         } else if (this.isPosInRightTop(lPos)) {
-            this.isRightTopSelected = true;
+            this.selectedResizeHandle = Direction.RIGHT_TOP;
         } else if (this.isPosInLeftBottom(lPos)) {
-            this.isLeftBottomSelected = true;
+            this.selectedResizeHandle = Direction.LEFT_BOTTOM;
         } else if (this.isPosInRightBottom(lPos)) {
-            this.isRightBottomSelected = true;
+            this.selectedResizeHandle = Direction.RIGHT_BOTTOM;
+        } else {
+            this.unsetResizeHandleSelection();
         }
     }
 
     private unsetResizeHandleSelection(): void {
-        this.isLeftTopSelected = false;
-        this.isRightTopSelected = false;
-        this.isLeftBottomSelected = false;
-        this.isRightBottomSelected = false;
+        this.selectedResizeHandle = Direction.NONE;
     }
 
     private isAnyResizeHandleSelected(): boolean {
-        return this.isLeftTopSelected
-            || this.isRightTopSelected
-            || this.isLeftBottomSelected
-            || this.isRightBottomSelected;
+        return this.selectedResizeHandle != Direction.NONE;
+    }
+
+    private isRightSideResizeHandleSelected(): boolean {
+        return this.selectedResizeHandle == Direction.RIGHT_TOP
+            || this.selectedResizeHandle == Direction.RIGHT_BOTTOM;
+    }
+
+    private isLeftSideResizeHandleSelected(): boolean {
+        return this.selectedResizeHandle == Direction.LEFT_TOP
+            || this.selectedResizeHandle == Direction.LEFT_BOTTOM;
+    }
+
+    private isTopSideResizeHandleSelected(): boolean {
+        return this.selectedResizeHandle == Direction.LEFT_TOP
+            || this.selectedResizeHandle == Direction.RIGHT_TOP;
+    }
+
+    private isBottomSideResizeHandleSelected(): boolean {
+        return this.selectedResizeHandle == Direction.LEFT_BOTTOM
+            || this.selectedResizeHandle == Direction.RIGHT_BOTTOM;
     }
 
     private calculateDeltaBaseOnLinePoint(p: any, pos: PIXI.Point, delta: any): any {
@@ -421,9 +433,9 @@ export class XEntity extends XGraphics {
                 delta.x = 0;
             }
 
-            if ((this.isRightTopSelected || this.isRightBottomSelected) && pos.x < p.x.min) {
+            if ((this.isRightSideResizeHandleSelected()) && pos.x < p.x.min) {
                 delta.x = 0;
-            } else if ((this.isLeftTopSelected || this.isLeftBottomSelected) && pos.x > p.x.max) {
+            } else if ((this.isLeftSideResizeHandleSelected()) && pos.x > p.x.max) {
                 delta.x = 0;
             }
         }
@@ -433,9 +445,9 @@ export class XEntity extends XGraphics {
                 delta.y = 0;
             }
 
-            if ((this.isLeftBottomSelected || this.isRightBottomSelected) && pos.y < p.y.min) {
+            if ((this.isBottomSideResizeHandleSelected()) && pos.y < p.y.min) {
                 delta.y = 0;
-            } else if ((this.isLeftTopSelected || this.isRightTopSelected) && pos.y > p.y.max) {
+            } else if ((this.isTopSideResizeHandleSelected()) && pos.y > p.y.max) {
                 delta.y = 0;
             }
         }
@@ -444,18 +456,18 @@ export class XEntity extends XGraphics {
     }
 
     private calculateDeltaBaseOnEntityBox(delta: any): any {
-        if (this.isLeftTopSelected) {
+        if (this.selectedResizeHandle == Direction.LEFT_TOP) {
             delta.width = -1 * delta.x;
             delta.height = -1 * delta.y;
-        } else if (this.isRightTopSelected) {
+        } else if (this.selectedResizeHandle == Direction.RIGHT_TOP) {
             delta.width = delta.x;
             delta.height = -1 * delta.y;
             delta.x = 0;
-        } else if (this.isLeftBottomSelected) {
+        } else if (this.selectedResizeHandle == Direction.LEFT_BOTTOM) {
             delta.width = -1 * delta.x;
             delta.height = delta.y;
             delta.y = 0;
-        } else if (this.isRightBottomSelected) {
+        } else if (this.selectedResizeHandle == Direction.RIGHT_BOTTOM) {
             delta.width = delta.x;
             delta.height = delta.y;
             delta.x = 0;
@@ -497,12 +509,27 @@ export class XEntity extends XGraphics {
 
         this.setSelected(true);
 
+        if (this.isAnyResizeHandleSelected() && this.parent instanceof XStage) {
+            let pos: PIXI.Point = this.toGlobal(this.bodyContainer.position);
+            this.resizeGuide = (<XStage>this.parent).createResizeGuide(
+                pos.x, pos.y, this.bodyContainerWidth, this.bodyContainerHeight);
+        }
+
         this.redraw();
 
     }
 
     protected onMouseUp(evt: PIXI.interaction.InteractionEvent): void {
         super.onMouseUp(evt);
+
+        if (this.isAnyResizeHandleSelected() && this.parent instanceof XStage && this.resizeGuide) {
+            let _self = this;
+            (<XStage>this.parent).commitResizeGuide(this.resizeGuide, (delta: any) => {
+                _self.resizeEntity(delta.x, delta.y, delta.width, delta.height);
+                console.log(this.getBodyRectangle());
+                _self.updateLinePoses(delta.x || delta.width, delta.y || delta.height);
+            });
+        }
 
         this.unsetResizeHandleSelection();
 
@@ -511,6 +538,15 @@ export class XEntity extends XGraphics {
 
     protected onMouseUpOutside(evt: PIXI.interaction.InteractionEvent): void {
         super.onMouseUpOutside(evt);
+
+        if (this.isAnyResizeHandleSelected() && this.parent instanceof XStage && this.resizeGuide) {
+            let _self = this;
+            (<XStage>this.parent).commitResizeGuide(this.resizeGuide, (delta: any) => {
+                _self.resizeEntity(delta.x, delta.y, delta.width, delta.height);
+                console.log(this.getBodyRectangle());
+                _self.updateLinePoses(delta.x || delta.width, delta.y || delta.height);
+            });
+        }
 
         this.unsetResizeHandleSelection();
 
@@ -534,8 +570,7 @@ export class XEntity extends XGraphics {
 
             if (this.isAnyResizeHandleSelected()) {
                 delta = this.calculateResizeBound(newPosition, delta);
-                this.resizeEntity(delta.x, delta.y, delta.width, delta.height);
-                this.updateLinePoses(delta.x || delta.width, delta.y || delta.height);
+                this.resizeGuide.resize(delta.x, delta.y, delta.width, delta.height);
             } else {
                 this.moveEntity(delta.x, delta.y);
                 this.updateLinePoses(delta.x, delta.y);

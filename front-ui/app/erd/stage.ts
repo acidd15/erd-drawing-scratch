@@ -10,6 +10,7 @@ import {State, EventType, DragState} from "./types";
 import {XSelection} from "./selection";
 
 import {getXYDelta, getInvFactor} from "./library";
+import {XResizeGuide} from "./guide";
 
 export class XStage extends XContainer {
 
@@ -94,6 +95,8 @@ export class XStage extends XContainer {
         entity.addItem("가나다라마바사아");
 
         this.addChild(entity);
+
+        entity.position.set(pos.x, pos.y);
     }
 
     public saveEntity(target: XEntity, data: string[]): void {
@@ -119,11 +122,25 @@ export class XStage extends XContainer {
             let line: XLine = new XLine(from, to);
             if (line != null) {
                 this.addChild(line);
-                line.sendToBack();
+                line.position.set(from.x, from.y);
+                //line.initLinePoints();
+                //line.sendToBack();
             }
         }
+    }
 
-        console.log(from.getLinePoints());
+    public createResizeGuide(x: number, y: number, w: number, h: number): XResizeGuide {
+        let g : XResizeGuide = new XResizeGuide(x, y, w, h);
+        this.addChild(g);
+        return g;
+    }
+
+    public commitResizeGuide(g: XResizeGuide, f: (delta: any) => void, removeOnly?: boolean): void {
+        if (!removeOnly) {
+            f(g.getDelta());
+        }
+
+        this.removeChild(g);
     }
 
     public setEventHandler(evtType: EventType, handler: (evt: EventType) => void): void {
