@@ -25,12 +25,14 @@ export class XEntity extends XGraphics {
     private resizeHandleSize: number;
     private resizeGuide: XResizeGuide;
     private bodyContainerYPosAdj: number;
+    private useDebug: boolean;
 
     constructor(x: number, y: number, width: number, height: number, color: number) {
         super();
 
-        //this.position.set(x, y);
-        console.log("entity", x, y);
+        this.useDebug = false;
+
+        this.position.set(x, y);
 
         this.color = color || 0xFF0000;
         this.minSize = {width: 50, height: 50};
@@ -73,12 +75,14 @@ export class XEntity extends XGraphics {
     public redraw(): void {
         this.clear();
 
-        this.lineStyle(1, 0xff00ff, 1);
-        let d: any = this.toLocal(new PIXI.Point(this.x, this.y));
-        this.drawRect(d.x, d.y, this.width, this.height);
+        if (this.useDebug) {
+            this.lineStyle(1, 0xff00ff, 1);
+            let d: any = this.toLocal(new PIXI.Point(this.x, this.y));
+            this.drawRect(d.x, d.y, this.width, this.height);
 
-        this.lineStyle(1, 0xffff00, 1);
-        this.drawRect(this.bodyContainer.x, this.bodyContainer.y, this.bodyContainerWidth, this.bodyContainerHeight);
+            this.lineStyle(1, 0xffff00, 1);
+            this.drawRect(this.bodyContainer.x, this.bodyContainer.y, this.bodyContainerWidth, this.bodyContainerHeight);
+        }
 
         this.drawBody();
         this.drawResizeHandle();
@@ -105,45 +109,6 @@ export class XEntity extends XGraphics {
         this.addChild(this.entityName);
     }
 
-    /*
-    public addItem(value: string): void {
-        var t = new PIXI.Text(
-            value,
-            {
-                fontFamily: 'Arial',
-                fontSize: '11px',
-                fill: 'green',
-                align: 'left'
-            }
-        );
-
-        t.position.set(5, this.itemCount * this.itemHeight);
-        // to prevent hit test
-        t.containsPoint = () => false;
-
-        this.itemCount++;
-
-        if (this.itemWidthMax < t.width) {
-            this.itemWidthMax = t.width;
-        }
-
-        let prevWidth: number = this._width;
-        if (this.itemWidthMax > this.bodyContainer.width) {
-            this._width = this.itemWidthMax + (5 * 2);
-        }
-
-        let prevHeight: number = this._height;
-        if (this.itemCount * this.itemHeight + 5 > this._height) {
-            this._height = this.itemCount * this.itemHeight;
-        }
-
-        this.bodyContainer.addChild(t);
-        this.redraw();
-
-        //this.updateLinePoses(this._width - prevWidth, this._height - prevHeight);
-    }
-    */
-
     public addItem(value: string): void {
         var t = new PIXI.Text(
             value,
@@ -162,8 +127,14 @@ export class XEntity extends XGraphics {
         this.itemCount++;
 
         this.bodyContainer.addChild(t);
+
+        let prevWidth: number = this.bodyContainerWidth;
+        let prevHeight: number = this.bodyContainerHeight;
 
         this.updateBodyContainerWidthHeight();
+
+        this.updateLinePoses(this.bodyContainerWidth - prevWidth, this.bodyContainerHeight - prevHeight,
+            Direction.RIGHT_BOTTOM);
 
         this.redraw();
     }
@@ -179,18 +150,11 @@ export class XEntity extends XGraphics {
     }
 
     public removeItems() {
-        let prevWidth: number = this.width;
-        let prevHeight: number = this.height;
-
         this.bodyContainer.removeChildren();
-        this.width = this.minSize.width;
-        this.height = this.minSize.height;
         this.itemCount = 0;
         this.itemWidthMax = this.width;
 
         this.redraw();
-
-        this.updateLinePoses(this.width - prevWidth, this.height - prevHeight);
     }
 
     public getItems(): string[] {
@@ -217,30 +181,11 @@ export class XEntity extends XGraphics {
     private drawBody(): void {
         if (this.bodyContainer) {
             this.bodyContainer.clear();
-            this.bodyContainer.beginFill(this.color, 0.2);
+            this.bodyContainer.beginFill(this.color, 1);
             this.bodyContainer.lineStyle(1, 0x00, 1);
             this.bodyContainer.drawRect(0, 0, this.bodyContainerWidth, this.bodyContainerHeight);
             this.bodyContainer.endFill();
-
-            //this.clipBodyContainer();
         }
-    }
-
-    private clipBodyContainer(): void {
-        let clip: PIXI.Graphics = <PIXI.Graphics>this.bodyContainer.mask;
-
-        if (!clip) {
-            clip = new PIXI.Graphics();
-        }
-
-        let p: PIXI.Point = this.toGlobal(this.bodyContainer.position);
-
-        clip.clear();
-        clip.beginFill(this.color, 1);
-        clip.drawRect(p.x -1, p.y, this.width +1, this.height +1);
-        clip.endFill();
-
-        this.bodyContainer.mask = clip;
     }
 
     private drawResizeHandle(): void {
@@ -374,9 +319,11 @@ export class XEntity extends XGraphics {
         this.redraw();
     }
 
-    public updateLinePoses(xDelta: number, yDelta: number): void {
+    public updateLinePoses(xDelta: number, yDelta: number, controlDirection?: Direction): void {
         if (this.jointLines) {
-            let controlDirection: Direction = this.getCurrentControlDirection();
+            if (controlDirection == undefined) {
+                controlDirection = this.getCurrentControlDirection();
+            }
             for (let v of this.jointLines) {
                 v.updateLineJoint(this, controlDirection, xDelta, yDelta);
                 v.updateMiddleLinePoints();
@@ -526,7 +473,6 @@ export class XEntity extends XGraphics {
             let _self = this;
             (<XStage>this.parent).commitResizeGuide(this.resizeGuide, (delta: any) => {
                 _self.resizeEntity(delta.x, delta.y, delta.width, delta.height);
-                console.log(this.getBodyRectangle());
                 _self.updateLinePoses(delta.x || delta.width, delta.y || delta.height);
             });
         }
@@ -543,7 +489,6 @@ export class XEntity extends XGraphics {
             let _self = this;
             (<XStage>this.parent).commitResizeGuide(this.resizeGuide, (delta: any) => {
                 _self.resizeEntity(delta.x, delta.y, delta.width, delta.height);
-                console.log(this.getBodyRectangle());
                 _self.updateLinePoses(delta.x || delta.width, delta.y || delta.height);
             });
         }

@@ -95,8 +95,6 @@ export class XStage extends XContainer {
         entity.addItem("가나다라마바사아");
 
         this.addChild(entity);
-
-        entity.position.set(pos.x, pos.y);
     }
 
     public saveEntity(target: XEntity, data: string[]): void {
@@ -122,9 +120,7 @@ export class XStage extends XContainer {
             let line: XLine = new XLine(from, to);
             if (line != null) {
                 this.addChild(line);
-                line.position.set(from.x, from.y);
-                //line.initLinePoints();
-                //line.sendToBack();
+                line.sendToBack();
             }
         }
     }

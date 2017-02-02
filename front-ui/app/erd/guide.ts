@@ -16,7 +16,7 @@ export class XResizeGuide extends XGraphics {
         this.redraw();
     }
 
-    private redraw(): void {
+    public redraw(): void {
         this.clear();
         this.lineStyle(1, 0xbb, 1);
         this.drawRect(0, 0, this.w, this.h);
@@ -37,9 +37,6 @@ export class XResizeGuide extends XGraphics {
         this.delta.y += y;
         this.delta.width += w;
         this.delta.height += h;
-
-        this.delta.xw += x || w;
-        this.delta.yh += y || h;
 
         this.redraw();
     }

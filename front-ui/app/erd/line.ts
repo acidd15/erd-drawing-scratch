@@ -28,6 +28,10 @@ export class XLine extends XGraphics {
     constructor(private from: XEntity, private to: XEntity) {
         super();
 
+        this.useDebug = true;
+
+        this.position.set(0, 0);
+
         this.interactive = true;
         this.buttonMode = true;
         this.defaultCursor = "default";
@@ -38,8 +42,6 @@ export class XLine extends XGraphics {
         this.lineMoveMode = LineMoveMode.NONE;
 
         this.lineBoundarySize = 20;
-
-        this.useDebug = true;
 
         this.from.addLinePoint(this);
         this.to.addLinePoint(this);
@@ -88,7 +90,6 @@ export class XLine extends XGraphics {
     }
 
     public initLinePoints(): void {
-
         let linePos: any = this.getEntityCenterLinePosEach();
 
         this.linePoints[0] = new PIXI.Point(linePos.fromPos.x, linePos.fromPos.y);
@@ -103,15 +104,12 @@ export class XLine extends XGraphics {
         this.redraw();
     }
 
-    private updateFromLineJoint(from: XEntity, xDelta: number, yDelta: number,
-                                addDeltaToNewLineJoint: boolean = false): void {
+    private updateFromLineJoint(from: XEntity, xDelta: number, yDelta: number): void {
         let rect: PIXI.Rectangle = from.getBodyRectangle();
 
         let rectPoints: PIXI.Point[] = getRectanglePoints(rect, -1);
 
         let toBeJoinPoint: PIXI.Point = new PIXI.Point(this.linePoints[0].x + xDelta, this.linePoints[0].y + yDelta);
-
-        console.log(["toBeJoinPoint", toBeJoinPoint, xDelta, yDelta]);
 
         let result: any[] = [];
         for (let i: number = 0; 3 > i; ++i) {
@@ -160,9 +158,6 @@ export class XLine extends XGraphics {
         if (toBeX == 0 && toBeY == 0) {
             toBeX = this.linePoints[0].x + xDelta;
             toBeY = this.linePoints[0].y + yDelta;
-        } else if (addDeltaToNewLineJoint) {
-            toBeX += xDelta;
-            toBeY += yDelta;
         }
 
         if (toBeDirection == Direction.NONE) {
@@ -186,8 +181,7 @@ export class XLine extends XGraphics {
         this.lineDirections[0] = toBeDirection;
     }
 
-    private updateToLineJoint(to: XEntity, xDelta: number, yDelta: number,
-                              addDeltaToNewLineJoint: boolean = false): void {
+    private updateToLineJoint(to: XEntity, xDelta: number, yDelta: number): void {
         let rect: PIXI.Rectangle = to.getBodyRectangle();
 
         let rectPoints: PIXI.Point[] = getRectanglePoints(rect, -1);
@@ -241,9 +235,6 @@ export class XLine extends XGraphics {
         if (toBeX == 0 && toBeY == 0) {
             toBeX = this.linePoints[3].x + xDelta;
             toBeY = this.linePoints[3].y + yDelta;
-        } else if (addDeltaToNewLineJoint) {
-            toBeX += xDelta;
-            toBeY += yDelta;
         }
 
         if (toBeDirection == Direction.NONE) {
@@ -281,7 +272,7 @@ export class XLine extends XGraphics {
                     } else if (this.lineDirections[0] == Direction.TOP) {
                         xDelta = 0;
                     }
-                    this.updateFromLineJoint(target, xDelta, yDelta, true);
+                    this.updateFromLineJoint(target, xDelta, yDelta);
                 } else if (controlDirection == Direction.RIGHT_TOP
                     && (this.lineDirections[0] == Direction.RIGHT 
                         || this.lineDirections[0] == Direction.TOP)) {
@@ -290,7 +281,7 @@ export class XLine extends XGraphics {
                     } else if (this.lineDirections[0] == Direction.TOP) {
                         xDelta = 0;
                     }
-                    this.updateFromLineJoint(target, xDelta, yDelta, true);
+                    this.updateFromLineJoint(target, xDelta, yDelta);
                 } else if (controlDirection == Direction.LEFT_BOTTOM
                     && (this.lineDirections[0] == Direction.LEFT 
                         || this.lineDirections[0] == Direction.BOTTOM)) {
@@ -299,7 +290,7 @@ export class XLine extends XGraphics {
                     } else if (this.lineDirections[0] == Direction.BOTTOM) {
                         xDelta = 0;
                     }
-                    this.updateFromLineJoint(target, xDelta, yDelta, true);
+                    this.updateFromLineJoint(target, xDelta, yDelta);
                 } else if (controlDirection == Direction.RIGHT_BOTTOM
                     && (this.lineDirections[0] == Direction.RIGHT 
                         || this.lineDirections[0] == Direction.BOTTOM)) {
@@ -308,7 +299,7 @@ export class XLine extends XGraphics {
                     } else if (this.lineDirections[0] == Direction.BOTTOM) {
                         xDelta = 0;
                     }
-                    this.updateFromLineJoint(target, xDelta, yDelta, true);
+                    this.updateFromLineJoint(target, xDelta, yDelta);
                 }
             }
             this.updateToLineJoint(this.to, 0, 0);
@@ -324,7 +315,7 @@ export class XLine extends XGraphics {
                     } else if (this.lineDirections[3] == Direction.TOP) {
                         xDelta = 0;
                     }
-                    this.updateToLineJoint(target, xDelta, yDelta, true);
+                    this.updateToLineJoint(target, xDelta, yDelta);
                 } else if (controlDirection == Direction.RIGHT_TOP
                     && (this.lineDirections[3] == Direction.RIGHT 
                         || this.lineDirections[3] == Direction.TOP)) {
@@ -333,7 +324,7 @@ export class XLine extends XGraphics {
                     } else if (this.lineDirections[3] == Direction.TOP) {
                         xDelta = 0;
                     }
-                    this.updateToLineJoint(target, xDelta, yDelta, true);
+                    this.updateToLineJoint(target, xDelta, yDelta);
                 } else if (controlDirection == Direction.LEFT_BOTTOM
                     && (this.lineDirections[3] == Direction.LEFT 
                         || this.lineDirections[3] == Direction.BOTTOM)) {
@@ -342,7 +333,7 @@ export class XLine extends XGraphics {
                     } else if (this.lineDirections[3] == Direction.BOTTOM) {
                         xDelta = 0;
                     }
-                    this.updateToLineJoint(target, xDelta, yDelta, true);
+                    this.updateToLineJoint(target, xDelta, yDelta);
                 } else if (controlDirection == Direction.RIGHT_BOTTOM
                     && (this.lineDirections[3] == Direction.RIGHT 
                         || this.lineDirections[3] == Direction.BOTTOM)) {
@@ -351,7 +342,7 @@ export class XLine extends XGraphics {
                     } else if (this.lineDirections[3] == Direction.BOTTOM) {
                         xDelta = 0;
                     }
-                    this.updateToLineJoint(target, xDelta, yDelta, true);
+                    this.updateToLineJoint(target, xDelta, yDelta);
                 }
             }
             this.updateFromLineJoint(this.from, 0, 0);
@@ -406,11 +397,10 @@ export class XLine extends XGraphics {
         let fromCenter: PIXI.Point = this.from.getCenterPos();
         let toCenter: PIXI.Point = this.to.getCenterPos();
 
-        return {fromPos: this.toLocal(fromCenter), toPos: this.toLocal(toCenter)};
+        return {fromPos: fromCenter, toPos: toCenter};
     }
 
     private drawLine(): void {
-        console.log(this.parent);
         this.clear();
 
         this.lineStyle(1, 0x00, 1);
@@ -444,9 +434,6 @@ export class XLine extends XGraphics {
             this.beginFill(0xffff00, 1);
             this.drawRect(this.linePoints[3].x - 5, this.linePoints[3].y - 5, 10, 10);
             this.endFill();
-
-            this.lineStyle(1, 0xff00ff, 1);
-            this.drawRect(this.x, this.y, this.width, this.height);
         }
     }
 
