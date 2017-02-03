@@ -18,7 +18,6 @@ export class XStage extends XContainer {
     private oldPosition: PIXI.Point;
     private prevSelectedByClick: XGraphics;
     private curSelectedByClick: XGraphics;
-    private childSelected: boolean;
     private state: State;
     private eventMap: any;
     private keyboard: any;
@@ -32,7 +31,6 @@ export class XStage extends XContainer {
         this.dragging = DragState.ENDED;
         this.oldPosition = new PIXI.Point(0, 0);
         this.hitArea = new PIXI.Rectangle(0, 0, width, height);
-        this.childSelected = false;
         this.state = State.SELECT;
         this.eventMap = {};
         this.keyboard = {
@@ -125,8 +123,24 @@ export class XStage extends XContainer {
         }
     }
 
-    public createResizeGuide(x: number, y: number, w: number, h: number): XResizeGuide {
-        let g : XResizeGuide = new XResizeGuide(x, y, w, h);
+    public createResizeGuide(entity?: XEntity): XResizeGuide {
+        let l: PIXI.Rectangle[] = [];
+
+        if (entity == undefined) {
+            for (let v of this.children) {
+                if (v instanceof XEntity && (<XEntity>v).isSelected()) {
+                    l.push((<XEntity>v).getBodyRectangle());
+                }
+            }
+        } else {
+            l.push(entity.getBodyRectangle());
+        }
+
+        if (l.length == 0) {
+            return undefined;
+        }
+
+        let g: XResizeGuide  = new XResizeGuide(l);
         this.addChild(g);
         return g;
     }
@@ -186,10 +200,18 @@ export class XStage extends XContainer {
         }
 
         if (excepts.length == 0) {
-            this.childSelected = false;
             this.curSelectedByClick = undefined;
             this.prevSelectedByClick = undefined;
         }
+    }
+
+    public isAnyEntitySelected(excepts: XEntity): boolean {
+        for (let v of this.children) {
+            if (v instanceof XEntity && (<XEntity>v).isSelected()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected onMouseDown(evt: PIXI.interaction.InteractionEvent): void {
@@ -200,44 +222,17 @@ export class XStage extends XContainer {
 
         this.curSelectedByClick = !(evt.target instanceof XStage) ? <XGraphics>evt.target : undefined;
 
-        if (this.curSelectedByClick) {
-            if (this.curSelectedByClick instanceof XEntity) {
-                this.childSelected = true;
-            } else {
-                this.childSelected = false;
-            }
-        } else {
-            this.childSelected = false;
-        }
-
-        if (!this.childSelected) {
-            if (
-                (
-                    this.curSelectedByClick
-                    && this.curSelectedByClick instanceof XLine
-                    && (<XLine>this.curSelectedByClick).isLineMoving() == false
-                )
-                || !this.curSelectedByClick
-            ) {
-                this.selectionRect.show(this.oldPosition.x, this.oldPosition.y);
-            }
-        }
-
         if (this.state == State.ADD_RELATION) {
             if (this.curSelectedByClick instanceof XEntity) {
                 this.curSelectedByClick.setSelected(false);
                 if (this.prevSelectedByClick instanceof XEntity) {
-                    this.prevSelectedByClick.setSelected(false);
                     this.addRelation(<XEntity>this.prevSelectedByClick, <XEntity>this.curSelectedByClick);
                 }
             }
         } else if (this.state == State.SELECT) {
-            if (this.childSelected == false) {
+            if (evt.target == this) {
                 this.deselect([]);
-            } else {
-                if (this.keyboard.ctrlKey == false && this.curSelectedByClick.isSelectedNewly() == true) {
-                    this.deselect([<XEntity>this.curSelectedByClick]);
-                }
+                this.selectionRect.show(this.oldPosition.x, this.oldPosition.y);
             }
         } else if (this.state == State.ADD_ENTITY) {
             this.addUnnamedEntity(evt.data.global);

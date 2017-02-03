@@ -67,10 +67,6 @@ export class XEntity extends XGraphics {
         this.redraw();
     }
 
-    public getWidth(): number {
-        return this.width;
-    }
-
     //@Override
     public redraw(): void {
         this.clear();
@@ -303,20 +299,22 @@ export class XEntity extends XGraphics {
         return p;
     }
 
-    public resizeEntity(xDelta: number, yDelta: number, wDelta: number, hDelta: number): void {
+    public resizeEntity(xDelta: number, yDelta: number, wDelta?: number, hDelta?: number): void {
         this.position.x += xDelta;
         this.position.y += yDelta;
 
-        this.bodyContainerWidth += wDelta;
-        this.bodyContainerHeight += hDelta;
+        if (!(wDelta == undefined && hDelta == undefined)) {
+            this.bodyContainerWidth += wDelta;
+            this.bodyContainerHeight += hDelta;
 
-        this.visible = false;
-        this.redraw();
+            this.visible = false;
+            this.redraw();
 
-        this.updateBodyContainerWidthHeight();
+            this.updateBodyContainerWidthHeight();
 
-        this.visible = true;
-        this.redraw();
+            this.visible = true;
+            this.redraw();
+        }
     }
 
     public updateLinePoses(xDelta: number, yDelta: number, controlDirection?: Direction): void {
@@ -454,27 +452,42 @@ export class XEntity extends XGraphics {
         let lPos: PIXI.Point = this.toLocal(evt.data.global);
         this.setResizeHandleSelection(lPos);
 
-        this.setSelected(true);
+        if (this.parent instanceof XStage) {
+            if (!this.isSelected() && (<XStage>this.parent).getState() == State.SELECT) {
+                (<XStage>this.parent).deselect([]);
+            }
 
-        if (this.isAnyResizeHandleSelected() && this.parent instanceof XStage) {
-            let pos: PIXI.Point = this.toGlobal(this.bodyContainer.position);
-            this.resizeGuide = (<XStage>this.parent).createResizeGuide(
-                pos.x, pos.y, this.bodyContainerWidth, this.bodyContainerHeight);
+            if (this.isAnyResizeHandleSelected()) {
+                this.resizeGuide = (<XStage>this.parent).createResizeGuide(this);
+            } else {
+                this.setSelected(true);
+                this.resizeGuide = (<XStage>this.parent).createResizeGuide();
+            }
         }
 
-        this.redraw();
+        this.setSelected(true);
 
+        this.redraw();
     }
 
     protected onMouseUp(evt: PIXI.interaction.InteractionEvent): void {
         super.onMouseUp(evt);
 
-        if (this.isAnyResizeHandleSelected() && this.parent instanceof XStage && this.resizeGuide) {
+        if (this.parent instanceof XStage && this.resizeGuide) {
             let _self = this;
-            (<XStage>this.parent).commitResizeGuide(this.resizeGuide, (delta: any) => {
-                _self.resizeEntity(delta.x, delta.y, delta.width, delta.height);
-                _self.updateLinePoses(delta.x || delta.width, delta.y || delta.height);
-            });
+            if (this.isAnyResizeHandleSelected()) {
+                (<XStage>this.parent).commitResizeGuide(this.resizeGuide, (delta: any) => {
+                    _self.resizeEntity(delta.x, delta.y, delta.width, delta.height);
+                    _self.updateLinePoses(delta.x || delta.width, delta.y || delta.height);
+                });
+            } else {
+                (<XStage>this.parent).commitResizeGuide(this.resizeGuide, (delta: any) => {
+                    _self.resizeEntity(delta.x, delta.y);
+                    _self.updateLinePoses(delta.x, delta.y);
+                    (<XStage>_self.parent).moveSelectedEntityGroup(delta.x, delta.y);
+                });
+            }
+            this.resizeGuide = undefined;
         }
 
         this.unsetResizeHandleSelection();
@@ -485,12 +498,21 @@ export class XEntity extends XGraphics {
     protected onMouseUpOutside(evt: PIXI.interaction.InteractionEvent): void {
         super.onMouseUpOutside(evt);
 
-        if (this.isAnyResizeHandleSelected() && this.parent instanceof XStage && this.resizeGuide) {
+        if (this.parent instanceof XStage && this.resizeGuide) {
             let _self = this;
-            (<XStage>this.parent).commitResizeGuide(this.resizeGuide, (delta: any) => {
-                _self.resizeEntity(delta.x, delta.y, delta.width, delta.height);
-                _self.updateLinePoses(delta.x || delta.width, delta.y || delta.height);
-            });
+            if (this.isAnyResizeHandleSelected()) {
+                (<XStage>this.parent).commitResizeGuide(this.resizeGuide, (delta: any) => {
+                    _self.resizeEntity(delta.x, delta.y, delta.width, delta.height);
+                    _self.updateLinePoses(delta.x || delta.width, delta.y || delta.height);
+                });
+            } else {
+                (<XStage>this.parent).commitResizeGuide(this.resizeGuide, (delta: any) => {
+                    _self.resizeEntity(delta.x, delta.y);
+                    _self.updateLinePoses(delta.x, delta.y);
+                    (<XStage>(_self.parent)).moveSelectedEntityGroup(delta.x, delta.y);
+                });
+            }
+            this.resizeGuide = undefined;
         }
 
         this.unsetResizeHandleSelection();
@@ -513,13 +535,13 @@ export class XEntity extends XGraphics {
 
             this.oldPosition = newPosition;
 
-            if (this.isAnyResizeHandleSelected()) {
-                delta = this.calculateResizeBound(newPosition, delta);
-                this.resizeGuide.resize(delta.x, delta.y, delta.width, delta.height);
-            } else {
-                this.moveEntity(delta.x, delta.y);
-                this.updateLinePoses(delta.x, delta.y);
-                stage.moveSelectedEntityGroup(delta.x, delta.y);
+            if (this.resizeGuide) {
+                if (this.isAnyResizeHandleSelected()) {
+                    delta = this.calculateResizeBound(newPosition, delta);
+                    this.resizeGuide.resize(delta.x, delta.y, delta.width, delta.height);
+                } else {
+                    this.resizeGuide.resize(delta.x, delta.y, 0, 0);
+                }
             }
 
             this.redraw();

@@ -7,19 +7,27 @@ import {XGraphics} from "./graphics";
 export class XResizeGuide extends XGraphics {
     private delta: any;
 
-    constructor(x: number, y: number, private w: number, private h: number) {
+    constructor(private rects: PIXI.Rectangle[]) {
         super();
 
-        this.delta = {x: 0, y: 0, width: 0, height: 0, xw: 0, yh: 0};
+        this.delta = {x: 0, y: 0, width: 0, height: 0};
 
-        this.position.set(x,y);
-        this.redraw();
+        this.position.set(0, 0);
     }
 
     public redraw(): void {
         this.clear();
-        this.lineStyle(1, 0xbb, 1);
-        this.drawRect(0, 0, this.w, this.h);
+        this.lineStyle(1, 0xa37965, 1);
+
+        for(let v of this.rects) {
+            this.drawRect(
+                v.x + this.delta.x,
+                v.y + this.delta.y,
+                v.width + this.delta.width,
+                v.height + this.delta.height
+                );
+        }
+
     }
 
     public getDelta(): any {
@@ -27,12 +35,6 @@ export class XResizeGuide extends XGraphics {
     }
 
     public resize(x: number, y: number, w: number, h: number): void {
-        this.position.x += x;
-        this.position.y += y;
-
-        this.w += w;
-        this.h += h;
-
         this.delta.x += x;
         this.delta.y += y;
         this.delta.width += w;
