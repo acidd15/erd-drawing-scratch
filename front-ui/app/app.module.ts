@@ -7,7 +7,7 @@ import {XErdStageComponent} from './erd-stage.component';
 import {EditEntityComponent} from "./dialog/edit-entity.component";
 import {MenuComponent} from "./menu.component";
 import {ErdService} from "./erd.service";
-import {ButtonsModule, ModalModule} from 'ng2-bootstrap';
+import {ButtonsModule, ModalModule} from 'ngx-bootstrap';
 
 @NgModule({
     imports: [

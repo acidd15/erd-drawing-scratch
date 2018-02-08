@@ -1,6 +1,6 @@
 
 import {Component, Input, ViewChild} from "@angular/core";
-import {OnChange} from "ng2-bootstrap";
+import {OnChange} from "ngx-bootstrap";
 import {ErdService} from "./erd.service";
 import {EditEntityComponent} from "./dialog/edit-entity.component";
 
